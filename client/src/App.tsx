@@ -1,24 +1,27 @@
-import React, { Suspense } from "react";
-import { Router, Route, Switch } from "wouter";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/toaster";
-import { queryClient } from "@/lib/queryClient";
+
+import { Route, Router, Switch } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import { usePrefetch } from "@/hooks/usePrefetch";
 
-// Lazy load components
-const LandingPage = React.lazy(() => import("@/pages/landing"));
-const HomePage = React.lazy(() => import("@/pages/home"));
-const AuthPage = React.lazy(() => import("@/pages/auth"));
-const FeedPage = React.lazy(() => import("@/pages/feed"));
-const SubmitPostPage = React.lazy(() => import("@/pages/submit-post"));
-const CommunitiesPage = React.lazy(() => import("@/pages/communities"));
-const AnalyticsPage = React.lazy(() => import("@/pages/analytics"));
-const PremiumPage = React.lazy(() => import("@/pages/premium"));
-const NotFoundPage = React.lazy(() => import("@/pages/not-found"));
+import Header from "@/components/layout/header";
+import Sidebar from "@/components/layout/sidebar";
+import MobileNav from "@/components/layout/mobile-nav";
 
-function AuthenticatedApp() {
+import Landing from "@/pages/landing";
+import Auth from "@/pages/auth";
+import Home from "@/pages/home";
+import Feed from "@/pages/feed";
+import SubmitPost from "@/pages/submit-post";
+import Communities from "@/pages/communities";
+import Analytics from "@/pages/analytics";
+import Premium from "@/pages/premium";
+import About from "@/pages/about";
+import HowItWorks from "@/pages/how-it-works";
+import NotFound from "@/pages/not-found";
+
+export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
+  usePrefetch();
 
   if (isLoading) {
     return (
@@ -27,65 +30,153 @@ function AuthenticatedApp() {
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
             <span className="text-2xl font-bold text-white">BB</span>
           </div>
-          <p className="text-gray-600 font-medium">Loading...</p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <Switch>
-        <Route path="/auth" component={AuthPage} />
-        <Route component={LandingPage} />
-      </Switch>
-    );
-  }
-
-  return (
-    <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/feed" component={FeedPage} />
-      <Route path="/submit" component={SubmitPostPage} />
-      <Route path="/communities" component={CommunitiesPage} />
-      <Route path="/analytics" component={AnalyticsPage} />
-      <Route path="/premium" component={PremiumPage} />
-      <Route component={NotFoundPage} />
-    </Switch>
-  );
-}
-
-function AppContent() {
-  usePrefetch();
+  // Public routes that don't require authentication
+  const publicRoutes = ["/", "/auth", "/about", "/how-it-works"];
 
   return (
     <Router>
-      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-      </div>}>
-        <Switch>
-          <Route path="/" component={LandingPage} />
-          <Route path="/home" component={HomePage} />
-          <Route path="/auth" component={AuthPage} />
-          <Route path="/feed" component={FeedPage} />
-          <Route path="/submit" component={SubmitPostPage} />
-          <Route path="/communities" component={CommunitiesPage} />
-          <Route path="/analytics" component={AnalyticsPage} />
-          <Route path="/premium" component={PremiumPage} />
-          <Route component={NotFoundPage} />
-        </Switch>
-      </Suspense>
-    </Router>
-  );
-}
+      <Switch>
+        <Route path="/" exact>
+          {isAuthenticated ? <Home /> : <Landing />}
+        </Route>
+        
+        <Route path="/auth">
+          {isAuthenticated ? <Home /> : <Auth />}
+        </Route>
 
-export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <AppContent />
-      </TooltipProvider>
-    </QueryClientProvider>
+        <Route path="/about">
+          <About />
+        </Route>
+
+        <Route path="/how-it-works">
+          <HowItWorks />
+        </Route>
+
+        {/* Protected routes */}
+        <Route path="/feed">
+          {isAuthenticated ? (
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 lg:ml-64">
+                  <div className="p-6">
+                    <Feed />
+                  </div>
+                </main>
+              </div>
+              <MobileNav />
+            </div>
+          ) : (
+            <Auth />
+          )}
+        </Route>
+
+        <Route path="/submit">
+          {isAuthenticated ? (
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 lg:ml-64">
+                  <div className="p-6">
+                    <SubmitPost />
+                  </div>
+                </main>
+              </div>
+              <MobileNav />
+            </div>
+          ) : (
+            <Auth />
+          )}
+        </Route>
+
+        <Route path="/communities">
+          {isAuthenticated ? (
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 lg:ml-64">
+                  <div className="p-6">
+                    <Communities />
+                  </div>
+                </main>
+              </div>
+              <MobileNav />
+            </div>
+          ) : (
+            <Auth />
+          )}
+        </Route>
+
+        <Route path="/analytics">
+          {isAuthenticated ? (
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 lg:ml-64">
+                  <div className="p-6">
+                    <Analytics />
+                  </div>
+                </main>
+              </div>
+              <MobileNav />
+            </div>
+          ) : (
+            <Auth />
+          )}
+        </Route>
+
+        <Route path="/premium">
+          {isAuthenticated ? (
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 lg:ml-64">
+                  <div className="p-6">
+                    <Premium />
+                  </div>
+                </main>
+              </div>
+              <MobileNav />
+            </div>
+          ) : (
+            <Auth />
+          )}
+        </Route>
+
+        <Route path="/profile">
+          {isAuthenticated ? (
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 lg:ml-64">
+                  <div className="p-6">
+                    <Home />
+                  </div>
+                </main>
+              </div>
+              <MobileNav />
+            </div>
+          ) : (
+            <Auth />
+          )}
+        </Route>
+
+        <Route>
+          <NotFound />
+        </Route>
+      </Switch>
+    </Router>
   );
 }

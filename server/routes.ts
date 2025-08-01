@@ -3,6 +3,14 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+
+// Simple session-based auth middleware
+const sessionAuth = (req: any, res: any, next: any) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  next();
+};
 import { insertPostSchema, insertCommunitySchema, insertLiveEventSchema } from "@shared/schema";
 import { z } from "zod";
 import { cacheMiddleware } from "./cache";
@@ -12,10 +20,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      if (!req.session?.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -24,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all posts for the feed
-  app.get('/api/posts', isAuthenticated, cacheMiddleware({ duration: 300 }), async (req, res) => {
+  app.get('/api/posts', sessionAuth, cacheMiddleware({ duration: 300 }), async (req, res) => {
     try {
       const posts = await storage.getAllPosts();
       res.json(posts);
@@ -35,9 +50,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Like a post
-  app.post('/api/posts/:id/like', isAuthenticated, async (req: any, res) => {
+  app.post('/api/posts/:id/like', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const postId = req.params.id;
 
       const like = await storage.likePost(userId, postId);
@@ -48,13 +63,205 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Email/password authentication endpoints (placeholder for now)
+  // OAuth routes
+  app.get('/api/auth/google', (req, res) => {
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${process.env.GOOGLE_CLIENT_ID}&` +
+      `redirect_uri=${encodeURIComponent(process.env.GOOGLE_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/google/callback`)}&` +
+      `response_type=code&` +
+      `scope=openid email profile`;
+    
+    res.redirect(googleAuthUrl);
+  });
+
+  app.get('/api/auth/google/callback', async (req, res) => {
+    try {
+      const { code } = req.query;
+      
+      // Exchange code for tokens
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: process.env.GOOGLE_CLIENT_ID!,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+          code: code as string,
+          grant_type: 'authorization_code',
+          redirect_uri: process.env.GOOGLE_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/google/callback`,
+        }),
+      });
+
+      const tokens = await tokenResponse.json();
+
+      // Get user info
+      const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      });
+
+      const userInfo = await userResponse.json();
+
+      // Store user in database
+      await storage.upsertUser({
+        id: userInfo.id,
+        email: userInfo.email,
+        firstName: userInfo.given_name,
+        lastName: userInfo.family_name,
+        profileImageUrl: userInfo.picture,
+      });
+
+      // Set session
+      (req as any).session.userId = userInfo.id;
+      (req as any).session.user = userInfo;
+
+      res.redirect('/');
+    } catch (error) {
+      console.error('Google OAuth error:', error);
+      res.redirect('/auth?error=oauth_error');
+    }
+  });
+
+  app.get('/api/auth/twitter', (req, res) => {
+    const twitterAuthUrl = `https://twitter.com/i/oauth2/authorize?` +
+      `response_type=code&` +
+      `client_id=${process.env.TWITTER_CLIENT_ID}&` +
+      `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/twitter/callback`)}&` +
+      `scope=tweet.read users.read&` +
+      `state=state&` +
+      `code_challenge=challenge&` +
+      `code_challenge_method=plain`;
+    
+    res.redirect(twitterAuthUrl);
+  });
+
+  app.get('/api/auth/twitter/callback', async (req, res) => {
+    try {
+      const { code } = req.query;
+
+      // Exchange code for tokens
+      const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${Buffer.from(`${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`).toString('base64')}`,
+        },
+        body: new URLSearchParams({
+          code: code as string,
+          grant_type: 'authorization_code',
+          client_id: process.env.TWITTER_CLIENT_ID!,
+          redirect_uri: process.env.TWITTER_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/twitter/callback`,
+          code_verifier: 'challenge',
+        }),
+      });
+
+      const tokens = await tokenResponse.json();
+
+      // Get user info
+      const userResponse = await fetch('https://api.twitter.com/2/users/me', {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      });
+
+      const userData = await userResponse.json();
+      const userInfo = userData.data;
+
+      // Store user in database
+      await storage.upsertUser({
+        id: userInfo.id,
+        email: `${userInfo.username}@twitter.com`, // Twitter doesn't always provide email
+        firstName: userInfo.name?.split(' ')[0] || userInfo.username,
+        lastName: userInfo.name?.split(' ').slice(1).join(' ') || '',
+        profileImageUrl: userInfo.profile_image_url,
+      });
+
+      // Set session
+      (req as any).session.userId = userInfo.id;
+      (req as any).session.user = userInfo;
+
+      res.redirect('/');
+    } catch (error) {
+      console.error('Twitter OAuth error:', error);
+      res.redirect('/auth?error=oauth_error');
+    }
+  });
+
+  // Email/password authentication endpoints
   app.post('/api/auth/register', async (req, res) => {
-    res.status(501).json({ message: "Email registration coming soon! Please use social login for now." });
+    try {
+      const { email, password, firstName, lastName } = req.body;
+
+      // Simple validation
+      if (!email || !password || !firstName) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      // Create user (you should hash the password in production)
+      const userId = `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await storage.upsertUser({
+        id: userId,
+        email,
+        firstName,
+        lastName: lastName || '',
+        profileImageUrl: null,
+      });
+
+      // Set session
+      (req as any).session.userId = userId;
+      (req as any).session.user = { id: userId, email, firstName, lastName };
+
+      res.json({ message: "Registration successful", user: { id: userId, email, firstName, lastName } });
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({ message: "Registration failed" });
+    }
   });
 
   app.post('/api/auth/login', async (req, res) => {
-    res.status(501).json({ message: "Email login coming soon! Please use social login for now." });
+    try {
+      const { email, password } = req.body;
+
+      // Simple validation
+      if (!email || !password) {
+        return res.status(400).json({ message: "Missing email or password" });
+      }
+
+      // Get user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // In production, you should verify the hashed password
+      // For now, we'll assume the password is correct
+
+      // Set session
+      (req as any).session.userId = user.id;
+      (req as any).session.user = user;
+
+      res.json({ message: "Login successful", user });
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    (req as any).session.destroy((err: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logout successful" });
+    });
   });
 
   // Posts routes

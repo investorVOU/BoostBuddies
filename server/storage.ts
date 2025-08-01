@@ -513,6 +513,11 @@ export class DatabaseStorage implements IStorage {
       createdAt: row.created_at,
     };
   }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
 }
 
 export const storage = new DatabaseStorage();

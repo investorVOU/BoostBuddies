@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +14,38 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      {/* Navigation */}
+      <nav className="flex justify-between items-center p-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <span className="text-lg font-bold text-white">BB</span>
+          </div>
+          <span className="font-display text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            BoostBuddies
+          </span>
+        </div>
+        <div className="flex items-center gap-6">
+          <a 
+            href="/how-it-works" 
+            className="text-gray-600 hover:text-blue-600 font-medium transition-colors"
+          >
+            How It Works
+          </a>
+          <a 
+            href="/about" 
+            className="text-gray-600 hover:text-blue-600 font-medium transition-colors"
+          >
+            About
+          </a>
+          <Button 
+            className="font-heading bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+            onClick={() => window.location.href = '/auth'}
+          >
+            Get Started
+          </Button>
+        </div>
+      </nav>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-20 pb-32">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
@@ -22,19 +53,19 @@ export default function Landing() {
           <Badge className="mb-6 bg-white/90 text-blue-600 border-blue-200 font-medium px-4 py-2">
             🚀 Join 10,000+ creators already boosting their content
           </Badge>
-          
+
           <h1 className="font-display text-6xl md:text-7xl lg:text-8xl font-bold text-gray-900 mb-8 leading-tight">
             Boost Your
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent block">
               Social Reach
             </span>
           </h1>
-          
+
           <p className="font-body text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
             Connect with a thriving community of creators. Share your content, engage authentically, 
             and watch your social media presence grow exponentially.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
             <Button 
               size="lg" 
@@ -177,7 +208,7 @@ export default function Landing() {
           <h2 className="font-display text-5xl font-bold text-white mb-16">
             Trusted by Creators Worldwide
           </h2>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="glass rounded-3xl p-8">
               <div className="font-heading text-4xl font-bold text-white mb-2">10k+</div>
