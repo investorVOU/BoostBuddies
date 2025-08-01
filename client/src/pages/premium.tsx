@@ -262,8 +262,8 @@ export default function Premium() {
                               <FormMessage />
                             </FormItem>
                           )}
-                        )}
-                      />
+                        />
+                      )}
 
                       {selectedGateway === "crypto" && form.watch("cryptoType") && (
                         <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
