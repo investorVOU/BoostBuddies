@@ -1,0 +1,307 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(248, 84%, 65%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(142, 76%, 36%);
+  --accent-foreground: hsl(60, 9.1%, 97.8%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Custom BoostBuddies colors */
+  --bb-primary: hsl(248, 84%, 65%);
+  --bb-secondary: hsl(260, 84%, 65%);
+  --bb-accent: hsl(142, 76%, 36%);
+  --bb-success: hsl(142, 76%, 36%);
+  --bb-warning: hsl(43, 96%, 56%);
+  --bb-error: hsl(0, 84%, 60%);
+  --bb-blue: hsl(217, 91%, 60%);
+  --bb-purple: hsl(260, 84%, 65%);
+  --bb-green: hsl(142, 76%, 36%);
+  --bb-orange: hsl(25, 95%, 53%);
+  --bb-red: hsl(0, 84%, 60%);
+  --bb-yellow: hsl(43, 96%, 56%);
+  --bb-pink: hsl(330, 81%, 60%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(248, 84%, 65%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  /* Gradient backgrounds */
+  .gradient-bg {
+    background: linear-gradient(135deg, hsl(248, 84%, 65%) 0%, hsl(260, 84%, 65%) 100%);
+  }
+  
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(260, 84%, 65%) 100%);
+  }
+  
+  .gradient-success {
+    background: linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(158, 64%, 52%) 100%);
+  }
+  
+  .gradient-warning {
+    background: linear-gradient(135deg, hsl(43, 96%, 56%) 0%, hsl(32, 95%, 44%) 100%);
+  }
+  
+  .gradient-error {
+    background: linear-gradient(135deg, hsl(0, 84%, 60%) 0%, hsl(348, 83%, 47%) 100%);
+  }
+  
+  /* Card hover effects */
+  .card-hover {
+    transition: all 0.3s ease;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Platform colors */
+  .platform-twitter {
+    background-color: hsl(203, 89%, 53%);
+    color: white;
+  }
+  
+  .platform-facebook {
+    background-color: hsl(221, 44%, 41%);
+    color: white;
+  }
+  
+  .platform-youtube {
+    background-color: hsl(0, 100%, 50%);
+    color: white;
+  }
+  
+  .platform-tiktok {
+    background-color: hsl(0, 0%, 0%);
+    color: white;
+  }
+  
+  /* Status badges */
+  .status-pending {
+    background-color: hsl(43, 96%, 90%);
+    color: hsl(43, 96%, 30%);
+  }
+  
+  .status-approved {
+    background-color: hsl(142, 76%, 90%);
+    color: hsl(142, 76%, 25%);
+  }
+  
+  .status-rejected {
+    background-color: hsl(0, 84%, 90%);
+    color: hsl(0, 84%, 30%);
+  }
+  
+  /* Points and gamification */
+  .points-display {
+    background: linear-gradient(135deg, hsl(142, 76%, 95%) 0%, hsl(158, 64%, 95%) 100%);
+    border-color: hsl(142, 76%, 80%);
+  }
+  
+  /* Live indicator */
+  .live-indicator {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .5;
+    }
+  }
+  
+  /* Leaderboard styles */
+  .rank-1 {
+    background-color: hsl(43, 96%, 56%);
+    color: white;
+  }
+  
+  .rank-2 {
+    background-color: hsl(0, 0%, 60%);
+    color: white;
+  }
+  
+  .rank-3 {
+    background-color: hsl(25, 95%, 53%);
+    color: white;
+  }
+  
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    .mobile-padding {
+      padding-bottom: 5rem;
+    }
+  }
+  
+  /* Smooth transitions */
+  .transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+  
+  /* Focus states */
+  .focus-ring:focus {
+    outline: 2px solid hsl(248, 84%, 65%);
+    outline-offset: 2px;
+  }
+  
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(0, 0%, 95%);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(248, 84%, 65%);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(248, 84%, 55%);
+  }
+  
+  /* Button variants */
+  .btn-gradient-primary {
+    background: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(260, 84%, 65%) 100%);
+    color: white;
+    border: none;
+  }
+  
+  .btn-gradient-primary:hover {
+    background: linear-gradient(135deg, hsl(217, 91%, 50%) 0%, hsl(260, 84%, 55%) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  }
+  
+  /* Community colors */
+  .community-blue {
+    background-color: hsl(217, 91%, 60%);
+  }
+  
+  .community-purple {
+    background-color: hsl(260, 84%, 65%);
+  }
+  
+  .community-green {
+    background-color: hsl(142, 76%, 36%);
+  }
+  
+  .community-orange {
+    background-color: hsl(25, 95%, 53%);
+  }
+  
+  .community-red {
+    background-color: hsl(0, 84%, 60%);
+  }
+  
+  .community-pink {
+    background-color: hsl(330, 81%, 60%);
+  }
+  
+  /* Engagement metrics */
+  .metric-likes {
+    color: hsl(330, 81%, 60%);
+  }
+  
+  .metric-shares {
+    color: hsl(260, 84%, 65%);
+  }
+  
+  .metric-comments {
+    color: hsl(142, 76%, 36%);
+  }
+  
+  /* Loading states */
+  .loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  /* Text truncation utilities */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}

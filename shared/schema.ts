@@ -1,0 +1,148 @@
+import { sql } from 'drizzle-orm';
+import {
+  index,
+  jsonb,
+  pgTable,
+  timestamp,
+  varchar,
+  text,
+  integer,
+  boolean,
+  uuid,
+} from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Session storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  points: integer("points").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const posts = pgTable("posts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  platform: varchar("platform").notNull(), // twitter, facebook, youtube, tiktok
+  url: text("url").notNull(),
+  content: text("content").notNull(),
+  status: varchar("status").default("pending"), // pending, approved, rejected
+  likesReceived: integer("likes_received").default(0),
+  likesNeeded: integer("likes_needed").default(10),
+  shares: integer("shares").default(0),
+  comments: integer("comments").default(0),
+  pointsEarned: integer("points_earned").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const communities = pgTable("communities", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  icon: varchar("icon"),
+  color: varchar("color"),
+  memberCount: integer("member_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const communityMembers = pgTable("community_members", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  communityId: uuid("community_id").notNull().references(() => communities.id),
+  joinedAt: timestamp("joined_at").defaultNow(),
+});
+
+export const postLikes = pgTable("post_likes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  postId: uuid("post_id").notNull().references(() => posts.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const liveEvents = pgTable("live_events", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  hostId: varchar("host_id").notNull().references(() => users.id),
+  status: varchar("status").default("upcoming"), // upcoming, live, ended
+  scheduledAt: timestamp("scheduled_at"),
+  startedAt: timestamp("started_at"),
+  endedAt: timestamp("ended_at"),
+  participantCount: integer("participant_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const collabSpotlights = pgTable("collab_spotlights", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  collaborators: text("collaborators").notNull(), // JSON array of user IDs
+  imageUrl: varchar("image_url"),
+  views: integer("views").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPostSchema = createInsertSchema(posts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  likesReceived: true,
+  shares: true,
+  comments: true,
+  pointsEarned: true,
+  status: true,
+});
+
+export const insertCommunitySchema = createInsertSchema(communities).omit({
+  id: true,
+  memberCount: true,
+  createdAt: true,
+});
+
+export const insertLiveEventSchema = createInsertSchema(liveEvents).omit({
+  id: true,
+  participantCount: true,
+  createdAt: true,
+  startedAt: true,
+  endedAt: true,
+});
+
+// Types
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type InsertPost = z.infer<typeof insertPostSchema>;
+export type Post = typeof posts.$inferSelect;
+export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
+export type Community = typeof communities.$inferSelect;
+export type CommunityMember = typeof communityMembers.$inferSelect;
+export type PostLike = typeof postLikes.$inferSelect;
+export type InsertLiveEvent = z.infer<typeof insertLiveEventSchema>;
+export type LiveEvent = typeof liveEvents.$inferSelect;
+export type CollabSpotlight = typeof collabSpotlights.$inferSelect;
