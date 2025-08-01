@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Chrome, Twitter, Mail, Eye, EyeOff } from "lucide-react";
+import { Chrome, Twitter, Mail, Eye, EyeOff, Sparkles } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -61,18 +61,15 @@ export default function Auth() {
         title: isLogin ? "Welcome back!" : "Account created!",
         description: isLogin ? "You have been logged in successfully." : "Your account has been created and you are now logged in.",
       });
-      // Small delay to show the success message before redirecting
       setTimeout(() => {
         window.location.href = "/";
       }, 1000);
     },
     onError: (error: any) => {
       let errorMessage = "An unexpected error occurred.";
-
       if (error.message) {
         errorMessage = error.message;
       }
-
       toast({
         title: "Authentication failed",
         description: errorMessage,
@@ -98,48 +95,55 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
-      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-2xl font-bold text-white">BB</span>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute top-10 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+      <div className="absolute top-10 right-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+      
+      <Card className="w-full max-w-md glass-card shadow-2xl border-0 relative z-10 animate-fade-in-up">
+        <CardHeader className="text-center space-y-6 pb-8">
+          <div className="mx-auto w-20 h-20 gradient-primary rounded-2xl flex items-center justify-center shadow-lg animate-fade-in-up-delay">
+            <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            BoostBuddies
-          </CardTitle>
-          <CardDescription className="text-gray-600">
-            {isLogin ? "Welcome back! Sign in to your account" : "Create your account and join thousands of creators"}
-          </CardDescription>
+          <div className="space-y-2">
+            <CardTitle className="text-4xl font-bold font-display gradient-text">
+              BoostBuddies
+            </CardTitle>
+            <CardDescription className="text-gray-600 font-medium text-lg">
+              {isLogin ? "Welcome back! Sign in to your account" : "Create your account and join thousands of creators"}
+            </CardDescription>
+          </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-8 px-8 pb-8">
           {/* Social Login Buttons */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Button
               variant="outline"
-              className="w-full h-12 border-2 hover:bg-red-50 hover:border-red-200 transition-all duration-300"
+              className="w-full h-14 border-2 hover:bg-red-50 hover:border-red-300 transition-all duration-300 font-heading font-medium text-base btn-glow group rounded-xl"
               onClick={handleGoogleLogin}
             >
-              <Chrome className="mr-3 h-5 w-5 text-red-500" />
-              <span className="font-medium">Continue with Google</span>
+              <Chrome className="mr-3 h-5 w-5 text-red-500 group-hover:scale-110 transition-transform" />
+              <span>Continue with Google</span>
             </Button>
 
             <Button
               variant="outline"
-              className="w-full h-12 border-2 hover:bg-blue-50 hover:border-blue-200 transition-all duration-300"
+              className="w-full h-14 border-2 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 font-heading font-medium text-base btn-glow group rounded-xl"
               onClick={handleTwitterLogin}
             >
-              <Twitter className="mr-3 h-5 w-5 text-blue-500" />
-              <span className="font-medium">Continue with Twitter</span>
+              <Twitter className="mr-3 h-5 w-5 text-blue-500 group-hover:scale-110 transition-transform" />
+              <span>Continue with Twitter</span>
             </Button>
           </div>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
+              <Separator className="w-full bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-4 text-gray-500 font-medium">
+            <div className="relative flex justify-center text-sm uppercase">
+              <span className="bg-white px-6 text-gray-500 font-heading font-medium tracking-wide">
                 Or continue with email
               </span>
             </div>
@@ -148,18 +152,18 @@ export default function Auth() {
           {/* Email/Password Form */}
           {isLogin ? (
             <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                 <FormField
                   control={loginForm.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">Email Address</FormLabel>
+                      <FormLabel className="text-gray-700 font-heading font-medium text-sm tracking-wide">Email Address</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
                           placeholder="your@email.com"
-                          className="h-12 border-2 focus:border-blue-400"
+                          className="h-14 border-2 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-300 font-medium text-base rounded-xl"
                           autoComplete="email"
                           autoFocus
                           {...field}
@@ -175,26 +179,27 @@ export default function Auth() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
+                      <FormLabel className="text-gray-700 font-heading font-medium text-sm tracking-wide">Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input
                             type={showPassword ? "text" : "password"}
                             placeholder="Enter your password"
-                            className="h-12 border-2 focus:border-blue-400 pr-12"
+                            className="h-14 border-2 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-300 font-medium text-base rounded-xl pr-14"
+                            autoComplete="current-password"
                             {...field}
                           />
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
                             onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 hover:bg-indigo-50 rounded-lg transition-colors"
                           >
                             {showPassword ? (
-                              <EyeOff className="h-4 w-4 text-gray-500" />
+                              <EyeOff className="h-5 w-5 text-gray-500" />
                             ) : (
-                              <Eye className="h-4 w-4 text-gray-500" />
+                              <Eye className="h-5 w-5 text-gray-500" />
                             )}
                           </Button>
                         </div>
@@ -206,7 +211,7 @@ export default function Auth() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full h-14 gradient-primary hover:opacity-90 text-white font-heading font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl btn-glow"
                   disabled={authMutation.isPending}
                 >
                   <Mail className="mr-2 h-5 w-5" />
@@ -216,18 +221,18 @@ export default function Auth() {
             </Form>
           ) : (
             <Form {...registerForm}>
-              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={registerForm.control}
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700 font-medium">First Name</FormLabel>
+                        <FormLabel className="text-gray-700 font-heading font-medium text-sm tracking-wide">First Name</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="John" 
-                            className="h-12 border-2 focus:border-blue-400"
+                            className="h-14 border-2 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-300 font-medium text-base rounded-xl"
                             {...field} 
                           />
                         </FormControl>
@@ -241,11 +246,11 @@ export default function Auth() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700 font-medium">Last Name</FormLabel>
+                        <FormLabel className="text-gray-700 font-heading font-medium text-sm tracking-wide">Last Name</FormLabel>
                         <FormControl>
                           <Input 
                             placeholder="Doe" 
-                            className="h-12 border-2 focus:border-blue-400"
+                            className="h-14 border-2 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-300 font-medium text-base rounded-xl"
                             {...field} 
                           />
                         </FormControl>
@@ -260,14 +265,13 @@ export default function Auth() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">Email Address</FormLabel>
+                      <FormLabel className="text-gray-700 font-heading font-medium text-sm tracking-wide">Email Address</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
                           placeholder="your@email.com"
-                          className="h-12 border-2 focus:border-blue-400"
+                          className="h-14 border-2 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-300 font-medium text-base rounded-xl"
                           autoComplete="email"
-                          autoFocus
                           {...field}
                         />
                       </FormControl>
@@ -281,26 +285,27 @@ export default function Auth() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
+                      <FormLabel className="text-gray-700 font-heading font-medium text-sm tracking-wide">Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input
                             type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
-                            className="h-12 border-2 focus:border-blue-400 pr-12"
+                            placeholder="Create a strong password"
+                            className="h-14 border-2 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all duration-300 font-medium text-base rounded-xl pr-14"
+                            autoComplete="new-password"
                             {...field}
                           />
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
                             onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 hover:bg-indigo-50 rounded-lg transition-colors"
                           >
                             {showPassword ? (
-                              <EyeOff className="h-4 w-4 text-gray-500" />
+                              <EyeOff className="h-5 w-5 text-gray-500" />
                             ) : (
-                              <Eye className="h-4 w-4 text-gray-500" />
+                              <Eye className="h-5 w-5 text-gray-500" />
                             )}
                           </Button>
                         </div>
@@ -312,10 +317,10 @@ export default function Auth() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full h-14 gradient-primary hover:opacity-90 text-white font-heading font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl btn-glow"
                   disabled={authMutation.isPending}
                 >
-                  <Mail className="mr-2 h-5 w-5" />
+                  <Sparkles className="mr-2 h-5 w-5" />
                   {authMutation.isPending ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
@@ -326,7 +331,7 @@ export default function Auth() {
             <Button
               variant="link"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-gray-600 hover:text-blue-600 font-medium"
+              className="text-gray-600 hover:text-indigo-600 font-heading font-medium text-base transition-colors"
             >
               {isLogin
                 ? "Don't have an account? Sign up"
@@ -337,7 +342,7 @@ export default function Auth() {
 
           {isLogin && (
             <div className="text-center">
-              <Button variant="link" className="text-gray-500 hover:text-blue-600 text-sm">
+              <Button variant="link" className="text-gray-500 hover:text-indigo-600 text-sm font-heading transition-colors">
                 Forgot your password?
               </Button>
             </div>

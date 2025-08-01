@@ -4,6 +4,9 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import bcrypt from "bcrypt";
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as TwitterStrategy } from "passport-twitter";
 
 import { insertPostSchema, insertCommunitySchema, insertLiveEventSchema } from "@shared/schema";
 import { z } from "zod";
@@ -27,6 +30,126 @@ const sessionAuth = (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Temporarily disable Replit Auth to focus on email/password auth
   // await setupAuth(app);
+
+  // Initialize Passport for OAuth
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Passport serialization
+  passport.serializeUser((user: any, done) => {
+    done(null, user.id);
+  });
+
+  passport.deserializeUser(async (id: any, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
+  });
+
+  // Google OAuth Strategy
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/api/auth/google/callback"
+    }, async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails?.[0]?.value;
+        if (!email) {
+          return done(new Error('No email provided by Google'), null);
+        }
+
+        // Check if user exists
+        let user = await storage.getUserByEmail(email);
+        
+        if (!user) {
+          // Create new user
+          const userId = `google_${profile.id}`;
+          const userData = {
+            id: userId,
+            email,
+            firstName: profile.name?.givenName || '',
+            lastName: profile.name?.familyName || '',
+            passwordHash: '', // OAuth users don't need password
+            isPremium: false,
+            points: 0,
+          };
+          user = await storage.createUser(userData);
+        }
+        
+        return done(null, user);
+      } catch (error) {
+        return done(error, null);
+      }
+    }));
+  }
+
+  // Twitter OAuth Strategy
+  if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
+    passport.use(new TwitterStrategy({
+      consumerKey: process.env.TWITTER_CONSUMER_KEY,
+      consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
+      callbackURL: "/api/auth/twitter/callback",
+      includeEmail: true
+    }, async (token, tokenSecret, profile, done) => {
+      try {
+        const email = profile.emails?.[0]?.value || `${profile.username}@twitter.local`;
+        
+        // Check if user exists
+        let user = await storage.getUserByEmail(email);
+        
+        if (!user) {
+          // Create new user
+          const userId = `twitter_${profile.id}`;
+          const userData = {
+            id: userId,
+            email,
+            firstName: profile.displayName?.split(' ')[0] || '',
+            lastName: profile.displayName?.split(' ').slice(1).join(' ') || '',
+            passwordHash: '', // OAuth users don't need password
+            isPremium: false,
+            points: 0,
+          };
+          user = await storage.createUser(userData);
+        }
+        
+        return done(null, user);
+      } catch (error) {
+        return done(error, null);
+      }
+    }));
+  }
+
+  // Google OAuth routes
+  app.get('/api/auth/google', 
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+  );
+
+  app.get('/api/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/auth' }),
+    (req: any, res) => {
+      // Set session
+      req.session.userId = req.user.id;
+      res.redirect('/');
+    }
+  );
+
+  // Twitter OAuth routes
+  app.get('/api/auth/twitter',
+    passport.authenticate('twitter')
+  );
+
+  app.get('/api/auth/twitter/callback',
+    passport.authenticate('twitter', { failureRedirect: '/auth' }),
+    (req: any, res) => {
+      // Set session
+      req.session.userId = req.user.id;
+      res.redirect('/');
+    }
+  );
 
   // Auth routes
   app.get('/api/auth/user', async (req: any, res) => {
