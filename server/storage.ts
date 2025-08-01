@@ -26,7 +26,7 @@ import {
   type InsertSubscription,
   type CryptoAddress,
 } from "@shared/schema";
-import { db } from "./db";
+import { db, supabase } from "./db";
 import { eq, desc, and, count } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -92,92 +92,9 @@ export class DatabaseStorage implements IStorage {
 
   private async seedData() {
     try {
-      // Check if communities already exist
-      const existingCommunities = await db.select().from(communities).limit(1);
-      if (existingCommunities.length > 0) return;
-
-      // Seed communities
-      await db.insert(communities).values([
-        {
-          name: "Web Developers",
-          description: "A community for web developers to share tips and collaborate",
-          icon: "fas fa-code",
-          color: "blue",
-          memberCount: 1200,
-        },
-        {
-          name: "UI/UX Designers",
-          description: "Creative designers sharing inspiration and feedback",
-          icon: "fas fa-paint-brush",
-          color: "purple",
-          memberCount: 856,
-        },
-        {
-          name: "Content Creators",
-          description: "YouTubers, TikTokers, and social media creators",
-          icon: "fas fa-video",
-          color: "red",
-          memberCount: 2100,
-        }
-      ]);
-
-      // Seed collab spotlights
-      await db.insert(collabSpotlights).values([
-        {
-          title: "Tech Innovators",
-          description: "Amazing collaboration on AI tutorials! Their joint series got 50K+ views this week.",
-          collaborators: JSON.stringify(["user1", "user2", "user3"]),
-          imageUrl: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60",
-          views: 50000,
-          isActive: true,
-        }
-      ]);
-
-      // Seed live events (with null hostId for now)
-      await db.insert(liveEvents).values([
-        {
-          title: "React Q&A Session",
-          description: "Join Sarah's live coding session and ask your React questions!",
-          hostId: null,
-          status: "live",
-          scheduledAt: new Date(),
-          participantCount: 234,
-        },
-        {
-          title: "Design System Workshop",
-          description: "Learn how to build scalable design systems",
-          hostId: null,
-          status: "upcoming",
-          scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          participantCount: 0,
-        }
-      ]);
-
-      // Seed crypto addresses
-      await db.insert(cryptoAddresses).values([
-        {
-          cryptoType: "btc",
-          address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-          isActive: true,
-        },
-        {
-          cryptoType: "eth",
-          address: "0x742d35Cc6634C0532925a3b8D6f9C0d9D5b1e3a2",
-          isActive: true,
-        },
-        {
-          cryptoType: "usdt",
-          address: "0x742d35Cc6634C0532925a3b8D6f9C0d9D5b1e3a2",
-          isActive: true,
-        },
-        {
-          cryptoType: "matic",
-          address: "0x742d35Cc6634C0532925a3b8D6f9C0d9D5b1e3a2",
-          isActive: true,
-        },
-      ]);
+      console.log("✓ Supabase seeding skipped - use SQL Editor for initial data setup");
     } catch (error) {
-      console.log('Seed data already exists or error seeding:', error);
+      console.log('Seeding error:', error);
     }
   }
 
