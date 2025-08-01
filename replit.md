@@ -28,7 +28,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Data Storage Solutions
 - **Database**: PostgreSQL with Drizzle ORM
-- **Database Provider**: Neon serverless PostgreSQL
+- **Database Provider**: Supabase PostgreSQL
 - **Schema Management**: Drizzle Kit for migrations and schema evolution
 - **Session Storage**: PostgreSQL table for persistent sessions
 
@@ -41,7 +41,7 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Core Infrastructure
-- **Neon Database**: Serverless PostgreSQL hosting for primary data storage
+- **Supabase**: PostgreSQL hosting for primary data storage
 - **Replit Auth**: OAuth 2.0/OpenID Connect authentication provider
 - **Replit Development Environment**: Integrated development and deployment platform
 
