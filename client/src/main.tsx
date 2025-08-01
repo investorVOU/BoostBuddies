@@ -1,27 +1,13 @@
 import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
+import { queryClient } from "./lib/queryClient";
 import App from "./App.tsx";
 import "./index.css";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      gcTime: 1000 * 60 * 10,
-      retry: (failureCount, error) => {
-        if (error?.message?.includes('401') || error?.message?.includes('403')) {
-          return false;
-        }
-        return failureCount < 3;
-      },
-    },
-  },
-});
-
-// Register service worker
+// Register service worker for caching
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
@@ -34,7 +20,10 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root");
+if (!rootElement) throw new Error("Failed to find the root element");
+
+createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -42,5 +31,5 @@ createRoot(document.getElementById("root")!).render(
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
-  </StrictMode>,
+  </StrictMode>
 );

@@ -1,33 +1,42 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { isUnauthorizedError } from "./authUtils";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    if (res.status === 401) {
+      throw new Error(`401: ${await res.text()}`);
+    }
+    throw new Error(`${res.status}: ${await res.text()}`);
   }
 }
 
-export async function apiRequest(endpoint: string, method = "GET", body?: any) {
-  const token = getAuthToken();
+// Add the missing getAuthToken function
+export function getAuthToken(): string | null {
+  return null; // Session-based auth, no token needed
+}
 
-  const config: RequestInit = {
+export async function apiRequest(
+  endpoint: string,
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  body?: any
+) {
+  const options: RequestInit = {
     method,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
     },
-    credentials: 'include', // Include cookies for session management
   };
 
-  if (body && (method === "POST" || method === "PUT" || method === "PATCH")) {
-    config.body = typeof body === 'string' ? body : JSON.stringify(body);
+  if (body && method !== "GET") {
+    options.body = JSON.stringify(body);
   }
 
-  const response = await fetch(endpoint, config);
+  const response = await fetch(endpoint, options);
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(errorText || `HTTP ${response.status}`);
   }
 
   return response.json();

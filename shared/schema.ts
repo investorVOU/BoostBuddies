@@ -33,6 +33,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  password: varchar("password"), // Add password field for email/password auth
   points: integer("points").default(0),
   isPremium: boolean("is_premium").default(false),
   premiumExpiresAt: timestamp("premium_expires_at"),
