@@ -356,6 +356,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get posts for admin moderation
+  app.get('/api/admin/posts', adminAuth, async (req: any, res) => {
+    try {
+      const { data: posts, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          users!posts_user_id_fkey(first_name, last_name, email)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Convert to camelCase for frontend  
+      const convertedPosts = posts.map(post => ({
+        id: post.id,
+        userId: post.user_id,
+        user: {
+          firstName: post.users?.first_name,
+          lastName: post.users?.last_name,
+          email: post.users?.email,
+        },
+        platform: post.platform,
+        url: post.url,
+        title: post.title,
+        description: post.description,
+        status: post.status,
+        likesReceived: post.likes_received,
+        likesNeeded: post.likes_needed,
+        shares: post.shares,
+        comments: post.comments,
+        pointsEarned: post.points_earned,
+        engagementsCompleted: post.engagements_completed || 0,
+        autoApproved: post.auto_approved,
+        approvedBy: post.approved_by,
+        approvedAt: post.approved_at,
+        rejectedReason: post.rejected_reason,
+        createdAt: post.created_at,
+        updatedAt: post.updated_at,
+      }));
+      
+      res.json(convertedPosts);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      res.status(500).json({ message: "Failed to fetch posts" });
+    }
+  });
+
+  // Approve/reject posts
+  app.patch('/api/admin/posts/:postId', adminAuth, async (req: any, res) => {
+    try {
+      const { postId } = req.params;
+      const { status, rejectedReason } = req.body;
+      
+      const updates: any = {
+        status,
+        updated_at: new Date().toISOString(),
+      };
+      
+      if (status === 'approved') {
+        updates.approved_by = req.session.user.id;
+        updates.approved_at = new Date().toISOString();
+        updates.rejected_reason = null;
+      } else if (status === 'rejected' && rejectedReason) {
+        updates.rejected_reason = rejectedReason;
+        updates.approved_by = null;
+        updates.approved_at = null;
+      }
+      
+      const { data, error } = await supabase
+        .from('posts')
+        .update(updates)
+        .eq('id', postId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      res.json({ message: "Post updated successfully", post: data });
+    } catch (error) {
+      console.error('Error updating post:', error);
+      res.status(500).json({ message: "Failed to update post" });
+    }
+  });
+
+  // Record user engagement and check for auto-approval
+  app.post('/api/posts/:postId/engage', sessionAuth, async (req: any, res) => {
+    try {
+      const { postId } = req.params;
+      const { engagementType } = req.body; // like, share, comment
+      const userId = req.session.user.id;
+      
+      // Record the engagement
+      const { error: engagementError } = await supabase
+        .from('post_engagements')
+        .insert({
+          user_id: userId,
+          post_id: postId,
+          engagement_type: engagementType,
+        });
+      
+      if (engagementError) throw engagementError;
+      
+      // Count user's total engagements
+      const { count: totalEngagements } = await supabase
+        .from('post_engagements')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId);
+      
+      // Check if user has any pending posts that can be auto-approved
+      if ((totalEngagements || 0) >= 10) {
+        const { data: userPosts, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'pending');
+        
+        if (!postsError && userPosts.length > 0) {
+          // Auto-approve the oldest pending post
+          const postToApprove = userPosts[0];
+          await supabase
+            .from('posts')
+            .update({
+              status: 'auto_approved',
+              auto_approved: true,
+              approved_at: new Date().toISOString(),
+              engagements_completed: totalEngagements,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', postToApprove.id);
+        }
+      }
+      
+      res.json({ 
+        message: "Engagement recorded successfully",
+        totalEngagements: totalEngagements || 0,
+        autoApprovalEligible: (totalEngagements || 0) >= 10
+      });
+    } catch (error) {
+      console.error('Error recording engagement:', error);
+      res.status(500).json({ message: "Failed to record engagement" });
+    }
+  });
+
   app.get('/api/admin/stats', adminAuth, async (req: any, res) => {
     try {
       const [usersResult, postsResult, communitiesResult, adminLogsResult] = await Promise.all([

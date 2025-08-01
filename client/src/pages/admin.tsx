@@ -24,6 +24,12 @@ export default function AdminDashboard() {
     enabled: !!adminStatus?.isAdmin,
   });
 
+  // Get posts for moderation
+  const { data: posts, isLoading: postsLoading, refetch: refetchPosts } = useQuery({
+    queryKey: ['/api/admin/posts'],
+    enabled: !!adminStatus?.isAdmin,
+  });
+
   // Get system stats
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/admin/stats'],
@@ -45,6 +51,22 @@ export default function AdminDashboard() {
     },
     onError: (error: any) => {
       toast({ title: "Failed to update user", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updatePostMutation = useMutation({
+    mutationFn: async (data: { postId: string; status: string; rejectedReason?: string }) => {
+      return await apiRequest(`/api/admin/posts/${data.postId}`, "PATCH", {
+        status: data.status,
+        rejectedReason: data.rejectedReason
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Post updated successfully" });
+      refetchPosts();
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to update post", description: error.message, variant: "destructive" });
     },
   });
 
@@ -153,10 +175,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Admin Tabs */}
-        <Tabs defaultValue="users" className="space-y-6">
+        <Tabs defaultValue="posts" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="posts">Post Moderation</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="posts">Posts</TabsTrigger>
             <TabsTrigger value="logs">Admin Logs</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -222,13 +244,108 @@ export default function AdminDashboard() {
           <TabsContent value="posts">
             <Card>
               <CardHeader>
-                <CardTitle>Post Management</CardTitle>
+                <CardTitle>Post Moderation</CardTitle>
                 <CardDescription>
-                  Review and moderate user posts
+                  Review, approve, or reject user posts. Posts are auto-approved when users engage with 10 other posts.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">Post management features coming soon...</p>
+                {postsLoading ? (
+                  <p>Loading posts...</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Platform</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Engagements</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {posts?.map((post: any) => (
+                        <TableRow key={post.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{post.user?.firstName} {post.user?.lastName}</p>
+                              <p className="text-sm text-gray-500">{post.user?.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{post.platform}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{post.title}</p>
+                              <a href={post.url} target="_blank" rel="noopener noreferrer" 
+                                 className="text-sm text-blue-600 hover:underline">
+                                View Link
+                              </a>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              post.status === 'approved' || post.status === 'auto_approved' ? "default" :
+                              post.status === 'rejected' ? "destructive" : "secondary"
+                            }>
+                              {post.status === 'auto_approved' ? 'Auto-Approved' : post.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p>{post.engagementsCompleted}/10</p>
+                              {post.engagementsCompleted >= 10 && (
+                                <Badge className="mt-1" variant="default">Eligible</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{new Date(post.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            {post.status === 'pending' && (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => updatePostMutation.mutate({
+                                    postId: post.id,
+                                    status: 'approved'
+                                  })}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => updatePostMutation.mutate({
+                                    postId: post.id,
+                                    status: 'rejected',
+                                    rejectedReason: 'Manual rejection by admin'
+                                  })}
+                                >
+                                  Reject
+                                </Button>
+                              </div>
+                            )}
+                            {post.status !== 'pending' && (
+                              <span className="text-sm text-gray-500">
+                                {post.approvedAt && `Approved ${new Date(post.approvedAt).toLocaleDateString()}`}
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {posts?.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-gray-500">
+                            No posts submitted yet
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

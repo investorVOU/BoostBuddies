@@ -39,6 +39,11 @@ CREATE TABLE IF NOT EXISTS posts (
   shares INTEGER DEFAULT 0,
   comments INTEGER DEFAULT 0,
   points_earned INTEGER DEFAULT 0,
+  engagements_completed INTEGER DEFAULT 0,
+  auto_approved BOOLEAN DEFAULT FALSE,
+  approved_by VARCHAR REFERENCES users(id),
+  approved_at TIMESTAMP,
+  rejected_reason TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -119,6 +124,15 @@ CREATE TABLE IF NOT EXISTS payments (
   status VARCHAR DEFAULT 'pending',
   subscription_id UUID REFERENCES subscriptions(id),
   created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Post engagements tracking table
+CREATE TABLE IF NOT EXISTS post_engagements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR NOT NULL REFERENCES users(id),
+  post_id UUID NOT NULL REFERENCES posts(id),
+  engagement_type VARCHAR NOT NULL, -- like, share, comment
+  completed_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Admin logs table

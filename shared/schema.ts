@@ -48,14 +48,28 @@ export const posts = pgTable("posts", {
   url: text("url").notNull(),
   title: varchar("title").notNull(),
   description: text("description"),
-  status: varchar("status").default("pending"), // pending, approved, rejected
+  status: varchar("status").default("pending"), // pending, approved, rejected, auto_approved
   likesReceived: integer("likes_received").default(0),
   likesNeeded: integer("likes_needed").default(10),
   shares: integer("shares").default(0),
   comments: integer("comments").default(0),
   pointsEarned: integer("points_earned").default(0),
+  engagementsCompleted: integer("engagements_completed").default(0), // Track user's engagement with other posts
+  autoApproved: boolean("auto_approved").default(false),
+  approvedBy: varchar("approved_by").references(() => users.id), // Admin who approved
+  approvedAt: timestamp("approved_at"),
+  rejectedReason: text("rejected_reason"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Track user engagements with other posts
+export const postEngagements = pgTable("post_engagements", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  postId: uuid("post_id").notNull().references(() => posts.id),
+  engagementType: varchar("engagement_type").notNull(), // like, share, comment
+  completedAt: timestamp("completed_at").defaultNow(),
 });
 
 export const communities = pgTable("communities", {
