@@ -8,7 +8,7 @@ import bcrypt from "bcrypt";
 import { insertPostSchema, insertCommunitySchema, insertLiveEventSchema } from "@shared/schema";
 import { z } from "zod";
 import { cacheMiddleware } from "./cache";
-import { db } from "./db";
+import { supabase } from "./db";
 
 // Simple session-based auth middleware
 const sessionAuth = (req: any, res: any, next: any) => {

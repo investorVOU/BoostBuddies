@@ -26,7 +26,7 @@ import {
   type InsertSubscription,
   type CryptoAddress,
 } from "@shared/schema";
-import { db } from "./db";
+import { db, supabase } from "./db";
 import { eq, desc, and, count } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -92,9 +92,14 @@ export class DatabaseStorage implements IStorage {
 
   private async init() {
     try {
-      // Test database connection with Drizzle
-      await db.select().from(users).limit(1);
-      console.log('Database connected successfully');
+      // Test database connection
+      const { data, error } = await supabase.from('users').select('count').limit(1);
+      if (error) {
+        console.error('Database connection failed:', error);
+        // Don't fail completely, allow fallback
+      } else {
+        console.log('Database connected successfully');
+      }
     } catch (error) {
       console.error('Database initialization error:', error);
     }
