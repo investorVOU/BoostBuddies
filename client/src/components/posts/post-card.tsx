@@ -1,3 +1,4 @@
+import React, { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +23,7 @@ interface PostCardProps {
   };
 }
 
-export default function PostCard({ post }: PostCardProps) {
+const PostCard = React.memo(function PostCard({ post }: PostCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -74,7 +75,7 @@ export default function PostCard({ post }: PostCardProps) {
     const date = new Date(dateString);
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
+
     if (diffInMinutes < 60) {
       return `${diffInMinutes} minutes ago`;
     } else if (diffInMinutes < 1440) {
@@ -84,11 +85,11 @@ export default function PostCard({ post }: PostCardProps) {
     }
   };
 
-  const platformInfo = getPlatformIcon(post.platform);
-  const statusVariant = post.status === 'approved' ? 'default' : post.status === 'pending' ? 'secondary' : 'destructive';
-  const statusColor = post.status === 'approved' ? 'bg-green-100 text-green-800' : 
+  const platformInfo = useMemo(() => getPlatformIcon(post.platform), [post.platform]);
+  const statusVariant = useMemo(() => post.status === 'approved' ? 'default' : post.status === 'pending' ? 'secondary' : 'destructive', [post.status]);
+  const statusColor = useMemo(() => post.status === 'approved' ? 'bg-green-100 text-green-800' : 
                      post.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                     'bg-red-100 text-red-800';
+                     'bg-red-100 text-red-800', [post.status]);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -109,9 +110,9 @@ export default function PostCard({ post }: PostCardProps) {
             {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
           </Badge>
         </div>
-        
+
         <p className="text-gray-700 mb-4 line-clamp-3">{post.content}</p>
-        
+
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4 text-sm text-gray-500">
             <Button
@@ -133,7 +134,7 @@ export default function PostCard({ post }: PostCardProps) {
               <span>{post.comments}</span>
             </span>
           </div>
-          
+
           <div className="text-sm">
             {post.status === 'pending' ? (
               <span className="text-yellow-600">
@@ -149,4 +150,6 @@ export default function PostCard({ post }: PostCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
+
+export default PostCard;

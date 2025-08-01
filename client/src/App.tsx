@@ -1,30 +1,21 @@
-
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Route, Switch } from "wouter";
-import { Toaster } from "@/components/ui/toaster";
+import React, { Suspense } from "react";
+import { Router, Route, Switch } from "wouter";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Landing from "@/pages/landing";
-import Auth from "@/pages/auth";
-import Home from "@/pages/home";
-import Feed from "@/pages/feed";
-import SubmitPost from "@/pages/submit-post";
-import Communities from "@/pages/communities";
-import Analytics from "@/pages/analytics";
-import NotFound from "@/pages/not-found";
-import Premium from "@/pages/premium";
-import { useAuth } from "@/hooks/useAuth";
+import { Toaster } from "@/components/ui/toaster";
+import { queryClient } from "@/lib/queryClient";
+import { usePrefetch } from "@/hooks/usePrefetch";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: (failureCount, error: any) => {
-        if (error?.status === 401) return false;
-        return failureCount < 3;
-      },
-    },
-  },
-});
+// Lazy load components
+const LandingPage = React.lazy(() => import("@/pages/landing"));
+const HomePage = React.lazy(() => import("@/pages/home"));
+const AuthPage = React.lazy(() => import("@/pages/auth"));
+const FeedPage = React.lazy(() => import("@/pages/feed"));
+const SubmitPostPage = React.lazy(() => import("@/pages/submit-post"));
+const CommunitiesPage = React.lazy(() => import("@/pages/communities"));
+const AnalyticsPage = React.lazy(() => import("@/pages/analytics"));
+const PremiumPage = React.lazy(() => import("@/pages/premium"));
+const NotFoundPage = React.lazy(() => import("@/pages/not-found"));
 
 function AuthenticatedApp() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -45,34 +36,56 @@ function AuthenticatedApp() {
   if (!isAuthenticated) {
     return (
       <Switch>
-        <Route path="/auth" component={Auth} />
-        <Route component={Landing} />
+        <Route path="/auth" component={AuthPage} />
+        <Route component={LandingPage} />
       </Switch>
     );
   }
 
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/feed" component={Feed} />
-      <Route path="/submit" component={SubmitPost} />
-      <Route path="/communities" component={Communities} />
-      <Route path="/analytics" component={Analytics} />
-      <Route path="/premium" component={Premium} />
-      <Route component={NotFound} />
+      <Route path="/" component={HomePage} />
+      <Route path="/feed" component={FeedPage} />
+      <Route path="/submit" component={SubmitPostPage} />
+      <Route path="/communities" component={CommunitiesPage} />
+      <Route path="/analytics" component={AnalyticsPage} />
+      <Route path="/premium" component={PremiumPage} />
+      <Route component={NotFoundPage} />
     </Switch>
   );
 }
 
-function App() {
+function AppContent() {
+  usePrefetch();
+
+  return (
+    <Router>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>}>
+        <Switch>
+          <Route path="/" component={LandingPage} />
+          <Route path="/home" component={HomePage} />
+          <Route path="/auth" component={AuthPage} />
+          <Route path="/feed" component={FeedPage} />
+          <Route path="/submit" component={SubmitPostPage} />
+          <Route path="/communities" component={CommunitiesPage} />
+          <Route path="/analytics" component={AnalyticsPage} />
+          <Route path="/premium" component={PremiumPage} />
+          <Route component={NotFoundPage} />
+        </Switch>
+      </Suspense>
+    </Router>
+  );
+}
+
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthenticatedApp />
         <Toaster />
+        <AppContent />
       </TooltipProvider>
     </QueryClientProvider>
   );
 }
-
-export default App;

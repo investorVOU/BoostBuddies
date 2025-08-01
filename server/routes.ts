@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertPostSchema, insertCommunitySchema, insertLiveEventSchema } from "@shared/schema";
 import { z } from "zod";
+import { cacheMiddleware } from "./cache";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -23,7 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all posts for the feed
-  app.get('/api/posts', isAuthenticated, async (req, res) => {
+  app.get('/api/posts', isAuthenticated, cacheMiddleware({ duration: 300 }), async (req, res) => {
     try {
       const posts = await storage.getAllPosts();
       res.json(posts);
@@ -38,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const postId = req.params.id;
-      
+
       const like = await storage.likePost(userId, postId);
       res.json(like);
     } catch (error) {
@@ -57,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Posts routes
-  app.get('/api/posts', isAuthenticated, async (req: any, res) => {
+  app.get('/api/posts', isAuthenticated, cacheMiddleware({ duration: 300 }), async (req: any, res) => {
     try {
       const posts = await storage.getAllPosts();
       res.json(posts);
@@ -98,11 +99,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const postId = req.params.id;
-      
+
       // Check if user already liked this post
       const existingLikes = await storage.getUserPostLikes(userId);
       const alreadyLiked = existingLikes.some(like => like.postId === postId);
-      
+
       if (alreadyLiked) {
         await storage.unlikePost(userId, postId);
         res.json({ liked: false });
@@ -140,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Communities routes
-  app.get('/api/communities', isAuthenticated, async (req: any, res) => {
+  app.get('/api/communities', isAuthenticated, cacheMiddleware({ duration: 600 }), async (req: any, res) => {
     try {
       const communities = await storage.getAllCommunities();
       res.json(communities);
@@ -178,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const communityId = req.params.id;
       const success = await storage.leaveCommunity(userId, communityId);
-      
+
       if (success) {
         res.json({ message: "Left community successfully" });
       } else {
@@ -273,7 +274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', (message: string) => {
       try {
         const data = JSON.parse(message);
-        
+
         // Handle different WebSocket message types
         switch (data.type) {
           case 'join_event':
@@ -284,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               participantCount: data.participantCount
             });
             break;
-            
+
           case 'chat_message':
             // Handle chat messages in communities
             broadcast({
@@ -295,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               timestamp: new Date().toISOString()
             });
             break;
-            
+
           default:
             console.log('Unknown WebSocket message type:', data.type);
         }
