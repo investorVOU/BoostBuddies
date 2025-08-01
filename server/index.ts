@@ -8,15 +8,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configure session
-const pgStore = connectPgSimple(session);
+// Simplified session for development - using memory store temporarily
 app.use(
   session({
-    store: new pgStore({
-      conString: process.env.DATABASE_URL,
-      tableName: 'sessions',
-      createTableIfMissing: true,
-    }),
     secret: process.env.SESSION_SECRET || 'your-super-secret-session-key',
     resave: false,
     saveUninitialized: false,

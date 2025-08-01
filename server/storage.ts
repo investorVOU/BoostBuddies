@@ -100,45 +100,116 @@ export class DatabaseStorage implements IStorage {
 
   // User operations
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      if (!data) return undefined;
+      
+      // Convert snake_case to camelCase for our application
+      return {
+        ...data,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        profileImageUrl: data.profile_image_url,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return undefined;
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      if (!data) return undefined;
+      
+      // Convert snake_case to camelCase for our application
+      return {
+        ...data,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        profileImageUrl: data.profile_image_url,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error) {
+      console.error('Error getting user by email:', error);
+      return undefined;
+    }
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .upsert({
+          id: userData.id,
+          email: userData.email,
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          profile_image_url: userData.profileImageUrl,
+          password: userData.password,
+          updated_at: new Date().toISOString(),
+          created_at: userData.id ? undefined : new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Convert back to camelCase for our application
+      return {
+        ...data,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        profileImageUrl: data.profile_image_url,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+    } catch (error) {
+      console.error('Error upserting user:', error);
+      throw error;
+    }
   }
 
   // Post operations
   async createPost(postData: InsertPost): Promise<Post> {
-    const [post] = await db
-      .insert(posts)
-      .values({
-        ...postData,
-        status: "pending",
-        likesReceived: 0,
-        likesNeeded: 10,
-        shares: 0,
-        comments: 0,
-        pointsEarned: 0,
-      })
-      .returning();
-    return post;
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          ...postData,
+          status: "pending",
+          likes_received: 0,
+          likes_needed: 10,
+          shares: 0,
+          comments: 0,
+          points_earned: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
+    }
   }
 
   async getPost(id: string): Promise<Post | undefined> {
@@ -436,10 +507,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
-  }
+  // This method is already implemented above with Supabase, removing duplicate
 }
 
 export const storage = new DatabaseStorage();

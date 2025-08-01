@@ -14,18 +14,6 @@ export const supabase = createClient(
   process.env.SUPABASE_ANON_KEY!
 );
 
-// Fallback to direct database connection for Drizzle
-let db: any;
-try {
-  if (process.env.DATABASE_URL) {
-    const sql = postgres(process.env.DATABASE_URL, {
-      connect_timeout: 10,
-      idle_timeout: 10
-    });
-    db = drizzle(sql);
-  }
-} catch (error) {
-  console.warn("Direct database connection failed, using Supabase client only");
-}
-
-export { db };
+// For BoostBuddies, we're using Supabase client only
+// Direct database connection disabled to avoid network issues in Replit
+export const db = null;
