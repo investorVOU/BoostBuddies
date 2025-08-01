@@ -1,4 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+
+/* Performance optimizations */
+body {
+  font-display: swap;
+}
+
+/* Preload critical resources for faster loading */
+.loading-optimized {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -120,6 +131,17 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Loading spinner optimization */
+.spinner-optimized {
+  animation: spin 1s linear infinite;
+  will-change: transform;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Button hover effects */

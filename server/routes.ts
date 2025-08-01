@@ -900,6 +900,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Premium subscription routes
+  app.post('/api/premium/subscribe', sessionAuth, async (req, res) => {
+    try {
+      const { plan } = req.body;
+      const userId = req.session.userId;
+
+      if (!plan || !['monthly', 'yearly'].includes(plan)) {
+        return res.status(400).json({ message: 'Invalid plan selected' });
+      }
+
+      // Update user to premium
+      const { data: user, error: updateError } = await supabase
+        .from('users')
+        .update({ 
+          is_premium: true,
+          premium_expires_at: new Date(Date.now() + (plan === 'yearly' ? 365 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000))
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      res.json({ message: 'Premium subscription activated successfully', user });
+    } catch (error: any) {
+      console.error('Error activating premium subscription:', error);
+      res.status(500).json({ message: 'Failed to activate premium subscription' });
+    }
+  });
+
+  // Get user premium status
+  app.get('/api/premium/status', sessionAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('is_premium, premium_expires_at')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      res.json({ 
+        isPremium: user?.is_premium || false, 
+        expiresAt: user?.premium_expires_at 
+      });
+    } catch (error: any) {
+      console.error('Error fetching premium status:', error);
+      res.status(500).json({ message: 'Failed to fetch premium status' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time features

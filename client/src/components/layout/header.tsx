@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/profile/user-avatar";
+import { PremiumBadge } from "@/components/ui/premium-badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -61,18 +62,20 @@ export default function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative p-0 rounded-full">
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={user?.profileImageUrl || `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100`} alt={user?.firstName} />
-                  <AvatarFallback>{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <UserAvatar user={user || {}} size="md" showBadge={true} />
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <div className="px-3 py-2 border-b border-gray-100">
-                <p className="text-sm font-semibold text-gray-900">
-                  {user?.firstName} {user?.lastName}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  {user?.isPremium && (
+                    <PremiumBadge variant="crown" size="sm" />
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 truncate">
                   {user?.email}
                 </p>

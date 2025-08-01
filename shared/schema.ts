@@ -120,6 +120,24 @@ export const collabSpotlights = pgTable("collab_spotlights", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Premium features table
+export const premiumFeatures = pgTable("premium_features", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  featureType: varchar("feature_type").notNull(), // auto_approve, priority_support, advanced_analytics, unlimited_posts, custom_badge
+  isEnabled: boolean("is_enabled").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User badges table
+export const userBadges = pgTable("user_badges", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  badgeType: varchar("badge_type").notNull(), // premium, verified, top_contributor, early_adopter, etc.
+  badgeData: jsonb("badge_data"), // Custom badge configuration
+  earnedAt: timestamp("earned_at").defaultNow(),
+});
+
 export const subscriptions = pgTable("subscriptions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -213,3 +231,11 @@ export type Payment = typeof payments.$inferSelect;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type CryptoAddress = typeof cryptoAddresses.$inferSelect;
+
+// Premium feature types
+export type PremiumFeature = typeof premiumFeatures.$inferSelect;
+export type InsertPremiumFeature = typeof premiumFeatures.$inferInsert;
+
+// User badge types  
+export type UserBadge = typeof userBadges.$inferSelect;
+export type InsertUserBadge = typeof userBadges.$inferInsert;

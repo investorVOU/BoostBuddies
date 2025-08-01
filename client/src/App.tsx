@@ -2,6 +2,7 @@
 import { Route, Router, Switch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePrefetch } from "@/hooks/usePrefetch";
+import { LoadingScreen } from "@/components/ui/loading-spinner";
 
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
@@ -25,16 +26,7 @@ export default function App() {
   usePrefetch();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <span className="text-2xl font-bold text-white">BB</span>
-          </div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Setting up your dashboard..." />;
   }
 
   // Public routes that don't require authentication
