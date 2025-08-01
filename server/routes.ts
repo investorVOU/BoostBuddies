@@ -13,6 +13,8 @@ import { z } from "zod";
 import { cacheMiddleware } from "./cache";
 import { supabase } from "./db";
 import { FlutterwaveGateway, PaystackGateway, CryptoPaymentHandler } from "./payment-gateways";
+import * as speakeasy from "speakeasy";
+import * as qrcode from "qrcode";
 
 // Simple session-based auth middleware
 const sessionAuth = (req: any, res: any, next: any) => {
@@ -951,6 +953,218 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error fetching premium status:', error);
       res.status(500).json({ message: 'Failed to fetch premium status' });
+    }
+  });
+
+  // OTP Security Routes
+  app.get('/api/auth/otp/setup', sessionAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      
+      // Check if user already has OTP enabled
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('otp_secret, otp_enabled')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      if (user.otp_enabled) {
+        return res.status(400).json({ message: 'OTP is already enabled' });
+      }
+
+      // Generate new secret
+      const secret = speakeasy.generateSecret({
+        name: `BoostBuddies (${user.email || userId})`,
+        issuer: 'BoostBuddies'
+      });
+
+      // Generate QR code
+      const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url!);
+
+      // Store the secret temporarily (not yet enabled)
+      await supabase
+        .from('users')
+        .update({ 
+          otp_secret: secret.base32,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      res.json({
+        secret: secret.base32,
+        qrCode: qrCodeUrl,
+        manualEntryKey: secret.base32
+      });
+    } catch (error) {
+      console.error('OTP setup error:', error);
+      res.status(500).json({ message: 'Failed to setup OTP' });
+    }
+  });
+
+  app.post('/api/auth/otp/verify-setup', sessionAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { token } = req.body;
+
+      if (!token) {
+        return res.status(400).json({ message: 'OTP token is required' });
+      }
+
+      // Get user's secret
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('otp_secret')
+        .eq('id', userId)
+        .single();
+
+      if (error || !user.otp_secret) {
+        return res.status(400).json({ message: 'OTP setup not found' });
+      }
+
+      // Verify the token
+      const verified = speakeasy.totp.verify({
+        secret: user.otp_secret,
+        encoding: 'base32',
+        token: token,
+        window: 2
+      });
+
+      if (!verified) {
+        return res.status(400).json({ message: 'Invalid OTP token' });
+      }
+
+      // Enable OTP for the user
+      await supabase
+        .from('users')
+        .update({ 
+          otp_enabled: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      res.json({ message: 'OTP authentication enabled successfully' });
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      res.status(500).json({ message: 'Failed to verify OTP' });
+    }
+  });
+
+  app.post('/api/auth/otp/verify', sessionAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { token } = req.body;
+
+      if (!token) {
+        return res.status(400).json({ message: 'OTP token is required' });
+      }
+
+      // Get user's secret
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('otp_secret, otp_enabled')
+        .eq('id', userId)
+        .single();
+
+      if (error || !user.otp_secret || !user.otp_enabled) {
+        return res.status(400).json({ message: 'OTP not enabled for this user' });
+      }
+
+      // Verify the token
+      const verified = speakeasy.totp.verify({
+        secret: user.otp_secret,
+        encoding: 'base32',
+        token: token,
+        window: 2
+      });
+
+      if (!verified) {
+        return res.status(400).json({ message: 'Invalid OTP token' });
+      }
+
+      res.json({ message: 'OTP verified successfully', verified: true });
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      res.status(500).json({ message: 'Failed to verify OTP' });
+    }
+  });
+
+  app.post('/api/auth/otp/disable', sessionAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { token, password } = req.body;
+
+      if (!token) {
+        return res.status(400).json({ message: 'OTP token is required to disable' });
+      }
+
+      // Get user data
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('otp_secret, otp_enabled, password')
+        .eq('id', userId)
+        .single();
+
+      if (error || !user.otp_enabled) {
+        return res.status(400).json({ message: 'OTP not enabled for this user' });
+      }
+
+      // Verify password if user has one
+      if (user.password && password) {
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+          return res.status(400).json({ message: 'Invalid password' });
+        }
+      }
+
+      // Verify the OTP token
+      const verified = speakeasy.totp.verify({
+        secret: user.otp_secret,
+        encoding: 'base32',
+        token: token,
+        window: 2
+      });
+
+      if (!verified) {
+        return res.status(400).json({ message: 'Invalid OTP token' });
+      }
+
+      // Disable OTP
+      await supabase
+        .from('users')
+        .update({ 
+          otp_enabled: false,
+          otp_secret: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      res.json({ message: 'OTP authentication disabled successfully' });
+    } catch (error) {
+      console.error('OTP disable error:', error);
+      res.status(500).json({ message: 'Failed to disable OTP' });
+    }
+  });
+
+  app.get('/api/auth/otp/status', sessionAuth, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('otp_enabled')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      res.json({ 
+        otpEnabled: user?.otp_enabled || false 
+      });
+    } catch (error) {
+      console.error('OTP status error:', error);
+      res.status(500).json({ message: 'Failed to get OTP status' });
     }
   });
 

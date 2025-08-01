@@ -37,6 +37,8 @@ export const users = pgTable("users", {
   points: integer("points").default(0),
   isPremium: boolean("is_premium").default(false),
   premiumExpiresAt: timestamp("premium_expires_at"),
+  otpSecret: varchar("otp_secret"),
+  otpEnabled: boolean("otp_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

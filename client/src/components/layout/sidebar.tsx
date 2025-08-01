@@ -26,7 +26,7 @@ export default function Sidebar() {
           <span className="text-xl font-bold text-gray-900">BoostBuddies</span>
         </div>
       </div>
-      
+
       <nav className="flex flex-1 flex-col px-4 py-6">
         <ul role="list" className="flex flex-1 flex-col gap-y-2">
           {navigation.map((item) => (
@@ -46,7 +46,7 @@ export default function Sidebar() {
             </li>
           ))}
         </ul>
-        
+
         <div className="mt-auto">
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
             <div className="flex items-center space-x-3 mb-3">

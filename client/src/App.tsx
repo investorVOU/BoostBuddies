@@ -1,4 +1,3 @@
-
 import { Route, Router, Switch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { usePrefetch } from "@/hooks/usePrefetch";
@@ -16,6 +15,7 @@ import SubmitPost from "@/pages/submit-post";
 import Communities from "@/pages/communities";
 import Analytics from "@/pages/analytics";
 import Premium from "@/pages/premium";
+import Security from "@/pages/security";
 import AdminDashboard from "@/pages/admin";
 import About from "@/pages/about";
 import HowItWorks from "@/pages/how-it-works";
@@ -38,7 +38,7 @@ export default function App() {
         <Route path="/" exact>
           {isAuthenticated ? <Home /> : <Landing />}
         </Route>
-        
+
         <Route path="/auth">
           {isAuthenticated ? <Home /> : <Auth />}
         </Route>
@@ -169,7 +169,24 @@ export default function App() {
             <Auth />
           )}
         </Route>
-
+ <Route path="/security">
+          {isAuthenticated ? (
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 lg:ml-64">
+                  <div className="p-6">
+                    <Security />
+                  </div>
+                </main>
+              </div>
+              <MobileNav />
+            </div>
+          ) : (
+            <Auth />
+          )}
+        </Route>
         <Route>
           <NotFound />
         </Route>
