@@ -1,5 +1,6 @@
 import express, { type Request, type Response, NextFunction } from "express";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -8,9 +9,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Configure session
+const pgStore = connectPgSimple(session);
 app.use(
   session({
-    store: new (require('connect-pg-simple')(session))({
+    store: new pgStore({
       conString: process.env.DATABASE_URL,
       tableName: 'sessions',
       createTableIfMissing: true,
