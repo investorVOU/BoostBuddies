@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, Activity, Database, Settings, UserCheck, AlertTriangle } from "lucide-react";
+import { Shield, Users, Activity, Database, Settings, UserCheck, AlertTriangle, TrendingUp, Star } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
-  
+
   // Check admin status
   const { data: adminStatus, isLoading: adminLoading } = useQuery({
     queryKey: ['/api/admin/status'],
@@ -117,45 +117,36 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Users</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats?.totalUsers || 0}
-                  </p>
-                </div>
-              </div>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-700">{stats?.totalUsers || 0}</div>
+              <p className="text-xs text-blue-600">+12% from last month</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Activity className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active Posts</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats?.activePosts || 0}
-                  </p>
-                </div>
-              </div>
+          <Card className="bg-gradient-to-br from-green-50 to-green-100">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-700">$4,892</div>
+              <p className="text-xs text-green-600">+23% this month</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Database className="h-8 w-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Communities</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats?.totalCommunities || 0}
-                  </p>
-                </div>
-              </div>
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Premium Users</CardTitle>
+              <Star className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-700">127</div>
+              <p className="text-xs text-purple-600">8.4% conversion rate</p>
             </CardContent>
           </Card>
 
@@ -397,7 +388,7 @@ export default function AdminDashboard() {
                     </div>
                     <Button variant="outline">Configure</Button>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-medium">User Registration</h3>

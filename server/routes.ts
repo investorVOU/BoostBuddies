@@ -12,6 +12,12 @@ import { supabase } from "./db";
 
 // Simple session-based auth middleware
 const sessionAuth = (req: any, res: any, next: any) => {
+  console.log('Session check:', { 
+    sessionExists: !!req.session, 
+    userId: req.session?.userId,
+    sessionId: req.sessionID 
+  });
+  
   if (!req.session?.userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }

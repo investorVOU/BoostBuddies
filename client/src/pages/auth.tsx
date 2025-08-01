@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,7 +31,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
-  
+
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -69,11 +68,11 @@ export default function Auth() {
     },
     onError: (error: any) => {
       let errorMessage = "An unexpected error occurred.";
-      
+
       if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast({
         title: "Authentication failed",
         description: errorMessage,
@@ -112,7 +111,7 @@ export default function Auth() {
             {isLogin ? "Welcome back! Sign in to your account" : "Create your account and join thousands of creators"}
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {/* Social Login Buttons */}
           <div className="space-y-3">
@@ -124,7 +123,7 @@ export default function Auth() {
               <Chrome className="mr-3 h-5 w-5 text-red-500" />
               <span className="font-medium">Continue with Google</span>
             </Button>
-            
+
             <Button
               variant="outline"
               className="w-full h-12 border-2 hover:bg-blue-50 hover:border-blue-200 transition-all duration-300"
@@ -161,6 +160,8 @@ export default function Auth() {
                           type="email"
                           placeholder="your@email.com"
                           className="h-12 border-2 focus:border-blue-400"
+                          autoComplete="email"
+                          autoFocus
                           {...field}
                         />
                       </FormControl>
@@ -168,7 +169,7 @@ export default function Auth() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={loginForm.control}
                   name="password"
@@ -202,7 +203,7 @@ export default function Auth() {
                     </FormItem>
                   )}
                 />
-                
+
                 <Button
                   type="submit"
                   className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
@@ -234,7 +235,7 @@ export default function Auth() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={registerForm.control}
                     name="lastName"
@@ -253,7 +254,7 @@ export default function Auth() {
                     )}
                   />
                 </div>
-                
+
                 <FormField
                   control={registerForm.control}
                   name="email"
@@ -265,6 +266,8 @@ export default function Auth() {
                           type="email"
                           placeholder="your@email.com"
                           className="h-12 border-2 focus:border-blue-400"
+                          autoComplete="email"
+                          autoFocus
                           {...field}
                         />
                       </FormControl>
@@ -272,7 +275,7 @@ export default function Auth() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={registerForm.control}
                   name="password"
@@ -306,7 +309,7 @@ export default function Auth() {
                     </FormItem>
                   )}
                 />
-                
+
                 <Button
                   type="submit"
                   className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"

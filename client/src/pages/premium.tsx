@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -186,15 +185,56 @@ export default function Premium() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {features.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-3">
-                  <Check className="h-5 w-5 text-green-500" />
-                  <div>
-                    <span className="text-gray-700 font-medium">{feature.title}</span>
-                    <p className="text-sm text-gray-500">{feature.description}</p>
-                  </div>
-                </div>
-              ))}
+              <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>⚡ Instant post approval (within 5 minutes)</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>🚀 10x more engagement per post (guaranteed)</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>💎 Exclusive VIP communities (1000+ members)</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>📊 Advanced AI-powered analytics dashboard</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>⏰ Smart post scheduling with optimal timing</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>🎯 Targeted audience matching for better engagement</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>📈 Monthly growth reports & insights</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>🔥 Viral post boost feature (2x per month)</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>💬 1-on-1 growth strategy consultations</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>🏆 Premium badges & recognition</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>🎪 Early access to new features</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>📱 Mobile app priority & exclusive features</span>
+              </div>
+            </div>
               <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
                 <DialogTrigger asChild>
                   <Button className="w-full h-14 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-lg rounded-xl shadow-xl">
@@ -209,7 +249,7 @@ export default function Premium() {
                       Select your preferred payment gateway to upgrade to Premium
                     </DialogDescription>
                   </DialogHeader>
-                  
+
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       <FormField

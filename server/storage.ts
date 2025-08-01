@@ -86,6 +86,8 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private isInitialized = false;
+
   constructor() {
     this.seedData();
   }
@@ -98,6 +100,29 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  private async init() {
+    try {
+      // Test database connection
+      const { data, error } = await supabase.from('users').select('count').limit(1);
+      if (error) {
+        console.error('Database connection failed:', error);
+        // Don't fail completely, allow fallback
+      } else {
+        console.log('Database connected successfully');
+        this.isInitialized = true;
+      }
+    } catch (error) {
+      console.error('Database initialization error:', error);
+    }
+  }
+
+  private async ensureConnection() {
+    if (!this.isInitialized) {
+      await this.init();
+    }
+    return supabase;
+  }
+
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     try {
@@ -106,10 +131,10 @@ export class DatabaseStorage implements IStorage {
         .select('*')
         .eq('id', id)
         .single();
-      
+
       if (error && error.code !== 'PGRST116') throw error;
       if (!data) return undefined;
-      
+
       // Convert snake_case to camelCase for our application
       return {
         ...data,
@@ -132,10 +157,10 @@ export class DatabaseStorage implements IStorage {
         .select('*')
         .eq('email', email)
         .single();
-      
+
       if (error && error.code !== 'PGRST116') throw error;
       if (!data) return undefined;
-      
+
       // Convert snake_case to camelCase for our application
       return {
         ...data,
@@ -167,9 +192,9 @@ export class DatabaseStorage implements IStorage {
         })
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       // Convert back to camelCase for our application
       return {
         ...data,
@@ -203,7 +228,7 @@ export class DatabaseStorage implements IStorage {
         })
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     } catch (error) {
@@ -226,10 +251,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllPosts(): Promise<Post[]> {
-    return await db
-      .select()
-      .from(posts)
-      .orderBy(desc(posts.createdAt));
+    try {
+      const db = await this.ensureConnection();
+      const { data: posts, error } = await db
+        .from('posts')
+        .select(`
+          *,
+          users!posts_user_id_fkey(first_name, last_name, email)
+        `)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching posts:", error);
+        return [];
+      }
+
+      return posts.map(post => {
+        // Flatten the users object
+        const { users, ...rest } = post;
+        return {
+          ...rest,
+          userFirstName: users?.first_name || null,
+          userLastName: users?.last_name || null,
+          userEmail: users?.email || null,
+        };
+      });
+    } catch (error) {
+      console.error("Error in getAllPosts:", error);
+      return [];
+    }
   }
 
   async updatePost(id: string, updates: Partial<Post>): Promise<Post | undefined> {
@@ -353,7 +404,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllCommunities(): Promise<Community[]> {
-    return await db.select().from(communities).orderBy(desc(communities.memberCount));
+    try {
+      const db = await this.ensureConnection();
+      const { data: communities, error } = await db
+        .from('communities')
+        .select('*')
+        .order('member_count', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching communities:", error);
+        return [];
+      }
+
+      return communities;
+    } catch (error) {
+      console.error("Error in getAllCommunities:", error);
+      return [];
+    }
   }
 
   async joinCommunity(userId: string, communityId: string): Promise<CommunityMember> {
