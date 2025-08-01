@@ -43,7 +43,8 @@ export const posts = pgTable("posts", {
   userId: varchar("user_id").notNull().references(() => users.id),
   platform: varchar("platform").notNull(), // twitter, facebook, youtube, tiktok
   url: text("url").notNull(),
-  content: text("content").notNull(),
+  title: varchar("title").notNull(),
+  description: text("description"),
   status: varchar("status").default("pending"), // pending, approved, rejected
   likesReceived: integer("likes_received").default(0),
   likesNeeded: integer("likes_needed").default(10),
@@ -82,7 +83,7 @@ export const liveEvents = pgTable("live_events", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
   description: text("description"),
-  hostId: varchar("host_id").notNull().references(() => users.id),
+  hostId: varchar("host_id").references(() => users.id),
   status: varchar("status").default("upcoming"), // upcoming, live, ended
   scheduledAt: timestamp("scheduled_at"),
   startedAt: timestamp("started_at"),

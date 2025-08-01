@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: "fas fa-home" },
+  { name: "Community Feed", href: "/feed", icon: "fas fa-stream" },
   { name: "Submit Post", href: "/submit", icon: "fas fa-plus-circle" },
   { name: "Analytics", href: "/analytics", icon: "fas fa-chart-line" },
   { name: "Communities", href: "/communities", icon: "fas fa-users" },

@@ -22,6 +22,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all posts for the feed
+  app.get('/api/posts', isAuthenticated, async (req, res) => {
+    try {
+      const posts = await storage.getAllPosts();
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      res.status(500).json({ message: "Failed to fetch posts" });
+    }
+  });
+
+  // Like a post
+  app.post('/api/posts/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const postId = req.params.id;
+      
+      const like = await storage.likePost(userId, postId);
+      res.json(like);
+    } catch (error) {
+      console.error("Error liking post:", error);
+      res.status(500).json({ message: "Failed to like post" });
+    }
+  });
+
+  // Email/password authentication endpoints (placeholder for now)
+  app.post('/api/auth/register', async (req, res) => {
+    res.status(501).json({ message: "Email registration coming soon! Please use social login for now." });
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    res.status(501).json({ message: "Email login coming soon! Please use social login for now." });
+  });
+
   // Posts routes
   app.get('/api/posts', isAuthenticated, async (req: any, res) => {
     try {
