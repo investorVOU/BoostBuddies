@@ -12,6 +12,7 @@ import { insertPostSchema, insertCommunitySchema, insertLiveEventSchema } from "
 import { z } from "zod";
 import { cacheMiddleware } from "./cache";
 import { supabase } from "./db";
+import { FlutterwaveGateway, PaystackGateway, CryptoPaymentHandler } from "./payment-gateways";
 
 // Simple session-based auth middleware
 const sessionAuth = (req: any, res: any, next: any) => {
@@ -950,6 +951,419 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error fetching premium status:', error);
       res.status(500).json({ message: 'Failed to fetch premium status' });
+    }
+  });
+
+  // Initialize payment gateways
+  const flutterwaveGateway = new FlutterwaveGateway();
+  const paystackGateway = new PaystackGateway();
+  const cryptoHandler = new CryptoPaymentHandler();
+
+  // Payment gateway routes
+  app.post('/api/payments/flutterwave/initialize', sessionAuth, async (req: any, res) => {
+    try {
+      const { plan } = req.body;
+      const userId = req.session.userId;
+      
+      // Get user details
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const txRef = `bb_${userId}_${Date.now()}`;
+      const amount = plan === 'yearly' ? 20.00 : 2.00;
+      const redirectUrl = `${req.protocol}://${req.get('host')}/api/payments/flutterwave/callback`;
+
+      const paymentData = await flutterwaveGateway.initializePayment({
+        amount,
+        currency: 'USD',
+        email: user.email,
+        txRef,
+        redirectUrl,
+        customerName: `${user.first_name} ${user.last_name}`,
+      });
+
+      // Store payment record
+      await supabase.from('payments').insert({
+        user_id: userId,
+        gateway: 'flutterwave',
+        transaction_id: txRef,
+        amount: Math.round(amount * 100), // Store in cents
+        currency: 'USD',
+        status: 'pending',
+      });
+
+      res.json(paymentData);
+    } catch (error) {
+      console.error('Flutterwave initialization error:', error);
+      res.status(500).json({ message: 'Payment initialization failed' });
+    }
+  });
+
+  app.get('/api/payments/flutterwave/callback', async (req, res) => {
+    try {
+      const { transaction_id, tx_ref } = req.query;
+      
+      if (!transaction_id) {
+        return res.redirect('/premium?status=error');
+      }
+
+      const verification = await flutterwaveGateway.verifyPayment(transaction_id as string);
+      
+      if (verification.status === 'success' && verification.data.status === 'successful') {
+        // Update payment status
+        const { data: payment, error: paymentError } = await supabase
+          .from('payments')
+          .update({ status: 'confirmed' })
+          .eq('transaction_id', tx_ref)
+          .select()
+          .single();
+
+        if (!paymentError && payment) {
+          // Activate premium subscription
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + (payment.amount >= 2000 ? 365 : 30)); // yearly or monthly
+
+          await supabase
+            .from('users')
+            .update({
+              is_premium: true,
+              premium_expires_at: expiryDate.toISOString(),
+            })
+            .eq('id', payment.user_id);
+        }
+
+        res.redirect('/premium?status=success');
+      } else {
+        res.redirect('/premium?status=failed');
+      }
+    } catch (error) {
+      console.error('Flutterwave callback error:', error);
+      res.redirect('/premium?status=error');
+    }
+  });
+
+  app.post('/api/payments/paystack/initialize', sessionAuth, async (req: any, res) => {
+    try {
+      const { plan } = req.body;
+      const userId = req.session.userId;
+      
+      // Get user details
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (userError || !user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const reference = `bb_${userId}_${Date.now()}`;
+      const amount = plan === 'yearly' ? 30000 : 3000; // NGN prices
+      const callbackUrl = `${req.protocol}://${req.get('host')}/api/payments/paystack/callback`;
+
+      const paymentData = await paystackGateway.initializePayment({
+        amount,
+        email: user.email,
+        reference,
+        callbackUrl,
+        customerName: `${user.first_name} ${user.last_name}`,
+      });
+
+      // Store payment record
+      await supabase.from('payments').insert({
+        user_id: userId,
+        gateway: 'paystack',
+        transaction_id: reference,
+        amount: amount * 100, // Store in kobo as cents equivalent
+        currency: 'NGN',
+        status: 'pending',
+      });
+
+      res.json(paymentData);
+    } catch (error) {
+      console.error('Paystack initialization error:', error);
+      res.status(500).json({ message: 'Payment initialization failed' });
+    }
+  });
+
+  app.get('/api/payments/paystack/callback', async (req, res) => {
+    try {
+      const { reference } = req.query;
+      
+      if (!reference) {
+        return res.redirect('/premium?status=error');
+      }
+
+      const verification = await paystackGateway.verifyPayment(reference as string);
+      
+      if (verification.status && verification.data.status === 'success') {
+        // Update payment status
+        const { data: payment, error: paymentError } = await supabase
+          .from('payments')
+          .update({ status: 'confirmed' })
+          .eq('transaction_id', reference)
+          .select()
+          .single();
+
+        if (!paymentError && payment) {
+          // Activate premium subscription
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + (payment.amount >= 3000000 ? 365 : 30)); // yearly or monthly
+
+          await supabase
+            .from('users')
+            .update({
+              is_premium: true,
+              premium_expires_at: expiryDate.toISOString(),
+            })
+            .eq('id', payment.user_id);
+        }
+
+        res.redirect('/premium?status=success');
+      } else {
+        res.redirect('/premium?status=failed');
+      }
+    } catch (error) {
+      console.error('Paystack callback error:', error);
+      res.redirect('/premium?status=error');
+    }
+  });
+
+  app.post('/api/payments/crypto/initialize', sessionAuth, async (req: any, res) => {
+    try {
+      const { cryptoType, plan } = req.body;
+      const userId = req.session.userId;
+
+      if (!['btc', 'eth', 'usdt', 'matic'].includes(cryptoType)) {
+        return res.status(400).json({ message: 'Invalid crypto type' });
+      }
+
+      // Crypto amounts (these would typically come from a price API)
+      const cryptoPrices = {
+        btc: plan === 'yearly' ? 0.0002 : 0.00002,
+        eth: plan === 'yearly' ? 0.005 : 0.0005,
+        usdt: plan === 'yearly' ? 20 : 2,
+        matic: plan === 'yearly' ? 25 : 2.5,
+      };
+
+      const amount = cryptoPrices[cryptoType as keyof typeof cryptoPrices];
+      const reference = `bb_crypto_${userId}_${Date.now()}`;
+
+      // Store payment record
+      await supabase.from('payments').insert({
+        user_id: userId,
+        gateway: 'crypto',
+        crypto_type: cryptoType,
+        transaction_id: reference,
+        amount: Math.round(amount * 100000000), // Store in satoshis/wei equivalent
+        currency: cryptoType.toUpperCase(),
+        status: 'pending',
+      });
+
+      const paymentInstructions = await cryptoHandler.generatePaymentInstructions(
+        cryptoType as 'btc' | 'eth' | 'usdt' | 'matic',
+        amount
+      );
+
+      res.json({
+        reference,
+        ...paymentInstructions,
+      });
+    } catch (error) {
+      console.error('Crypto payment initialization error:', error);
+      res.status(500).json({ message: 'Crypto payment initialization failed' });
+    }
+  });
+
+  app.post('/api/payments/crypto/confirm', sessionAuth, async (req: any, res) => {
+    try {
+      const { reference, txHash } = req.body;
+      const userId = req.session.userId;
+
+      if (!reference || !txHash) {
+        return res.status(400).json({ message: 'Reference and transaction hash required' });
+      }
+
+      // Update payment with transaction hash - admin will verify manually
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .update({ 
+          transaction_id: txHash,
+          status: 'pending' // Will be confirmed by admin
+        })
+        .eq('transaction_id', reference)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (paymentError) {
+        return res.status(404).json({ message: 'Payment not found' });
+      }
+
+      res.json({ 
+        message: 'Transaction hash submitted. Payment will be verified within 24 hours.',
+        payment 
+      });
+    } catch (error) {
+      console.error('Crypto payment confirmation error:', error);
+      res.status(500).json({ message: 'Payment confirmation failed' });
+    }
+  });
+
+  // Webhook endpoints
+  app.post('/api/webhooks/flutterwave', async (req, res) => {
+    try {
+      const signature = req.headers['verif-hash'] as string;
+      const payload = JSON.stringify(req.body);
+
+      if (!flutterwaveGateway.verifyWebhookSignature(payload, signature)) {
+        return res.status(400).json({ message: 'Invalid signature' });
+      }
+
+      const { data } = req.body;
+      if (data.status === 'successful') {
+        // Handle successful payment
+        await supabase
+          .from('payments')
+          .update({ status: 'confirmed' })
+          .eq('transaction_id', data.tx_ref);
+      }
+
+      res.json({ message: 'Webhook processed' });
+    } catch (error) {
+      console.error('Flutterwave webhook error:', error);
+      res.status(500).json({ message: 'Webhook processing failed' });
+    }
+  });
+
+  app.post('/api/webhooks/paystack', async (req, res) => {
+    try {
+      const signature = req.headers['x-paystack-signature'] as string;
+      const payload = JSON.stringify(req.body);
+
+      if (!paystackGateway.verifyWebhookSignature(payload, signature)) {
+        return res.status(400).json({ message: 'Invalid signature' });
+      }
+
+      const { data } = req.body;
+      if (data.status === 'success') {
+        // Handle successful payment
+        await supabase
+          .from('payments')
+          .update({ status: 'confirmed' })
+          .eq('transaction_id', data.reference);
+      }
+
+      res.json({ message: 'Webhook processed' });
+    } catch (error) {
+      console.error('Paystack webhook error:', error);
+      res.status(500).json({ message: 'Webhook processing failed' });
+    }
+  });
+
+  // Get crypto addresses for admin
+  app.get('/api/admin/crypto-addresses', adminAuth, async (req: any, res) => {
+    try {
+      const { data: addresses, error } = await supabase
+        .from('crypto_addresses')
+        .select('*')
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      res.json(addresses || []);
+    } catch (error) {
+      console.error('Error fetching crypto addresses:', error);
+      res.status(500).json({ message: 'Failed to fetch crypto addresses' });
+    }
+  });
+
+  // Update crypto addresses
+  app.post('/api/admin/crypto-addresses/:cryptoType', adminAuth, async (req: any, res) => {
+    try {
+      const { cryptoType } = req.params;
+      const { address } = req.body;
+
+      const { data, error } = await supabase
+        .from('crypto_addresses')
+        .upsert({
+          crypto_type: cryptoType,
+          address: address,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      res.json({ message: 'Crypto address updated successfully', data });
+    } catch (error) {
+      console.error('Error updating crypto address:', error);
+      res.status(500).json({ message: 'Failed to update crypto address' });
+    }
+  });
+
+  // Admin payment management
+  app.get('/api/admin/payments', adminAuth, async (req: any, res) => {
+    try {
+      const { data: payments, error } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          users!payments_user_id_fkey(first_name, last_name, email)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      res.json(payments || []);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      res.status(500).json({ message: 'Failed to fetch payments' });
+    }
+  });
+
+  app.patch('/api/admin/payments/:paymentId', adminAuth, async (req: any, res) => {
+    try {
+      const { paymentId } = req.params;
+      const { status } = req.body;
+
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .update({ status })
+        .eq('id', paymentId)
+        .select()
+        .single();
+
+      if (paymentError) throw paymentError;
+
+      // If payment is confirmed, activate premium
+      if (status === 'confirmed') {
+        const expiryDate = new Date();
+        const isYearly = payment.amount >= 2000; // Adjust based on your pricing
+        expiryDate.setDate(expiryDate.getDate() + (isYearly ? 365 : 30));
+
+        await supabase
+          .from('users')
+          .update({
+            is_premium: true,
+            premium_expires_at: expiryDate.toISOString(),
+          })
+          .eq('id', payment.user_id);
+      }
+
+      res.json({ message: 'Payment updated successfully', payment });
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      res.status(500).json({ message: 'Failed to update payment' });
     }
   });
 

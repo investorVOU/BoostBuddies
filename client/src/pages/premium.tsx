@@ -94,7 +94,61 @@ const pricingPlans = [
 export default function Premium() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedPlan, setSelectedPlan] = useState("yearly");
+  const [selectedPayment, setSelectedPayment] = useState<'flutterwave' | 'paystack' | 'crypto' | null>(null);
+  const [selectedCrypto, setSelectedCrypto] = useState<'btc' | 'eth' | 'usdt' | 'matic'>('btc');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
+
+  const initializePayment = async (gateway: 'flutterwave' | 'paystack' | 'crypto', plan: string) => {
+    try {
+      let endpoint = '';
+      let payload: any = { plan };
+
+      switch (gateway) {
+        case 'flutterwave':
+          endpoint = '/api/payments/flutterwave/initialize';
+          break;
+        case 'paystack':
+          endpoint = '/api/payments/paystack/initialize';
+          break;
+        case 'crypto':
+          endpoint = '/api/payments/crypto/initialize';
+          payload.cryptoType = selectedCrypto;
+          break;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (gateway === 'flutterwave' && data.status === 'success') {
+        window.location.href = data.data.link;
+      } else if (gateway === 'paystack' && data.status) {
+        window.location.href = data.data.authorization_url;
+      } else if (gateway === 'crypto') {
+        // Show crypto payment instructions
+        setCryptoPayment(data);
+        setShowCryptoModal(true);
+      }
+    } catch (error) {
+      console.error('Payment initialization error:', error);
+    }
+  };
+
+  const handleSubscribe = async (plan: string) => {
+    setSelectedPlan(plan);
+    setShowPaymentModal(true);
+  };
+
+  const [cryptoPayment, setCryptoPayment] = useState<any>(null);
+  const [showCryptoModal, setShowCryptoModal] = useState(false);
+  const [txHash, setTxHash] = useState('');
 
   const subscribeMutation = useMutation({
     mutationFn: async (plan: string) => {
@@ -114,19 +168,6 @@ export default function Premium() {
       });
     },
   });
-
-  const handleSubscribe = (plan: string) => {
-    if (!user) {
-      toast({
-        title: "Please sign in",
-        description: "You need to be signed in to subscribe to premium",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    subscribeMutation.mutate(plan);
-  };
 
   if (user?.isPremium) {
     return (

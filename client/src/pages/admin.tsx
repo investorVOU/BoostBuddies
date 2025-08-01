@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Users, Activity, Database, Settings, UserCheck, AlertTriangle, TrendingUp, Star } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { PaymentManagement } from "@/components/admin/payment-management";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -167,9 +168,10 @@ export default function AdminDashboard() {
 
         {/* Admin Tabs */}
         <Tabs defaultValue="posts" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="posts">Post Moderation</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="posts">Posts</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="logs">Admin Logs</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -337,6 +339,18 @@ export default function AdminDashboard() {
                     </TableBody>
                   </Table>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payments" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Management</CardTitle>
+                <CardDescription>Manage user payments and subscriptions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PaymentManagement />
               </CardContent>
             </Card>
           </TabsContent>
