@@ -1,24 +1,24 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { PremiumBadge } from "@/components/ui/premium-badge";
+import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { PremiumBadge } from "@/components/ui/premium-badge";
 import { 
   Crown, 
   Zap, 
-  Shield, 
   TrendingUp, 
-  Users, 
+  Target, 
   MessageCircle, 
-  CheckCircle, 
+  Users, 
+  Rocket, 
   Star,
   Sparkles,
-  Rocket,
-  Target
+  Shield,
+  CheckCircle
 } from "lucide-react";
 
 const premiumFeatures = [

@@ -1008,44 +1008,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/payments/flutterwave/callback', async (req, res) => {
     try {
-      const { transaction_id, tx_ref } = req.query;
+      const { transaction_id, tx_ref, status } = req.query;
       
+      console.log('Flutterwave callback received:', { transaction_id, tx_ref, status });
+
       if (!transaction_id) {
-        return res.redirect('/premium?status=error');
+        console.log('No transaction_id in callback');
+        return res.redirect('/premium?status=error&message=No transaction ID');
       }
 
+      // Verify payment with Flutterwave
       const verification = await flutterwaveGateway.verifyPayment(transaction_id as string);
       
+      console.log('Flutterwave verification result:', verification);
+
       if (verification.status === 'success' && verification.data.status === 'successful') {
         // Update payment status
         const { data: payment, error: paymentError } = await supabase
           .from('payments')
-          .update({ status: 'confirmed' })
+          .update({ 
+            status: 'confirmed',
+            updated_at: new Date().toISOString(),
+          })
           .eq('transaction_id', tx_ref)
           .select()
           .single();
 
-        if (!paymentError && payment) {
-          // Activate premium subscription
-          const expiryDate = new Date();
-          expiryDate.setDate(expiryDate.getDate() + (payment.amount >= 2000 ? 365 : 30)); // yearly or monthly
-
-          await supabase
-            .from('users')
-            .update({
-              is_premium: true,
-              premium_expires_at: expiryDate.toISOString(),
-            })
-            .eq('id', payment.user_id);
+        if (paymentError) {
+          console.error('Failed to update payment:', paymentError);
+          return res.redirect('/premium?status=error&message=Payment update failed');
         }
 
-        res.redirect('/premium?status=success');
+        if (payment) {
+          // Activate premium subscription
+          const success = await activatePremiumSubscription(payment.id);
+          if (success) {
+            console.log('Premium activated successfully for payment:', payment.id);
+            res.redirect('/premium?status=success&message=Premium activated');
+          } else {
+            console.log('Failed to activate premium for payment:', payment.id);
+            res.redirect('/premium?status=error&message=Premium activation failed');
+          }
+        } else {
+          res.redirect('/premium?status=error&message=Payment not found');
+        }
       } else {
-        res.redirect('/premium?status=failed');
+        console.log('Payment verification failed:', verification);
+        res.redirect('/premium?status=failed&message=Payment verification failed');
       }
     } catch (error) {
       console.error('Flutterwave callback error:', error);
-      res.redirect('/premium?status=error');
+      res.redirect('/premium?status=error&message=Callback processing failed');
     }
   });
 
@@ -1096,44 +1109,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/payments/paystack/callback', async (req, res) => {
     try {
-      const { reference } = req.query;
+      const { reference, trxref } = req.query;
+      const txRef = reference || trxref;
       
-      if (!reference) {
-        return res.redirect('/premium?status=error');
+      console.log('Paystack callback received:', { reference, trxref, txRef });
+
+      if (!txRef) {
+        console.log('No reference in callback');
+        return res.redirect('/premium?status=error&message=No reference provided');
       }
 
-      const verification = await paystackGateway.verifyPayment(reference as string);
+      // Verify payment with Paystack
+      const verification = await paystackGateway.verifyPayment(txRef as string);
       
+      console.log('Paystack verification result:', verification);
+
       if (verification.status && verification.data.status === 'success') {
         // Update payment status
         const { data: payment, error: paymentError } = await supabase
           .from('payments')
-          .update({ status: 'confirmed' })
-          .eq('transaction_id', reference)
+          .update({ 
+            status: 'confirmed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('transaction_id', txRef)
           .select()
           .single();
 
-        if (!paymentError && payment) {
-          // Activate premium subscription
-          const expiryDate = new Date();
-          expiryDate.setDate(expiryDate.getDate() + (payment.amount >= 3000000 ? 365 : 30)); // yearly or monthly
-
-          await supabase
-            .from('users')
-            .update({
-              is_premium: true,
-              premium_expires_at: expiryDate.toISOString(),
-            })
-            .eq('id', payment.user_id);
+        if (paymentError) {
+          console.error('Failed to update payment:', paymentError);
+          return res.redirect('/premium?status=error&message=Payment update failed');
         }
 
-        res.redirect('/premium?status=success');
+        if (payment) {
+          // Activate premium subscription
+          const success = await activatePremiumSubscription(payment.id);
+          if (success) {
+            console.log('Premium activated successfully for payment:', payment.id);
+            res.redirect('/premium?status=success&message=Premium activated');
+          } else {
+            console.log('Failed to activate premium for payment:', payment.id);
+            res.redirect('/premium?status=error&message=Premium activation failed');
+          }
+        } else {
+          res.redirect('/premium?status=error&message=Payment not found');
+        }
       } else {
-        res.redirect('/premium?status=failed');
+        console.log('Payment verification failed:', verification);
+        res.redirect('/premium?status=failed&message=Payment verification failed');
       }
     } catch (error) {
       console.error('Paystack callback error:', error);
-      res.redirect('/premium?status=error');
+      res.redirect('/premium?status=error&message=Callback processing failed');
     }
   });
 
@@ -1218,26 +1245,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to activate premium subscription
+  const activatePremiumSubscription = async (paymentId: string) => {
+    try {
+      // Get payment details
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('id', paymentId)
+        .single();
+
+      if (paymentError || !payment) {
+        console.error('Payment not found:', paymentError);
+        return false;
+      }
+
+      // Calculate expiry date based on amount
+      const expiryDate = new Date();
+      const isYearly = payment.amount >= 2000; // $20 or NGN 30,000
+      expiryDate.setDate(expiryDate.getDate() + (isYearly ? 365 : 30));
+
+      // Update user to premium
+      const { error: userError } = await supabase
+        .from('users')
+        .update({
+          is_premium: true,
+          premium_expires_at: expiryDate.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', payment.user_id);
+
+      if (userError) {
+        console.error('Failed to activate premium:', userError);
+        return false;
+      }
+
+      console.log(`Premium activated for user ${payment.user_id}, expires: ${expiryDate.toISOString()}`);
+      return true;
+    } catch (error) {
+      console.error('Error activating premium:', error);
+      return false;
+    }
+  };
+
   // Webhook endpoints
   app.post('/api/webhooks/flutterwave', async (req, res) => {
     try {
       const signature = req.headers['verif-hash'] as string;
       const payload = JSON.stringify(req.body);
 
+      console.log('Flutterwave webhook received:', { signature, body: req.body });
+
       if (!flutterwaveGateway.verifyWebhookSignature(payload, signature)) {
+        console.log('Invalid Flutterwave webhook signature');
         return res.status(400).json({ message: 'Invalid signature' });
       }
 
-      const { data } = req.body;
-      if (data.status === 'successful') {
-        // Handle successful payment
-        await supabase
+      const { event, data } = req.body;
+
+      if (event === 'charge.completed' && data.status === 'successful') {
+        console.log('Processing successful Flutterwave payment:', data.tx_ref);
+        
+        // Update payment status
+        const { data: payment, error: updateError } = await supabase
           .from('payments')
-          .update({ status: 'confirmed' })
-          .eq('transaction_id', data.tx_ref);
+          .update({ 
+            status: 'confirmed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('transaction_id', data.tx_ref)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Failed to update payment:', updateError);
+          return res.status(500).json({ message: 'Failed to update payment' });
+        }
+
+        if (payment) {
+          // Activate premium subscription
+          await activatePremiumSubscription(payment.id);
+        }
       }
 
-      res.json({ message: 'Webhook processed' });
+      res.json({ message: 'Webhook processed successfully' });
     } catch (error) {
       console.error('Flutterwave webhook error:', error);
       res.status(500).json({ message: 'Webhook processing failed' });
@@ -1249,20 +1340,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const signature = req.headers['x-paystack-signature'] as string;
       const payload = JSON.stringify(req.body);
 
+      console.log('Paystack webhook received:', { signature, body: req.body });
+
       if (!paystackGateway.verifyWebhookSignature(payload, signature)) {
+        console.log('Invalid Paystack webhook signature');
         return res.status(400).json({ message: 'Invalid signature' });
       }
 
-      const { data } = req.body;
-      if (data.status === 'success') {
-        // Handle successful payment
-        await supabase
+      const { event, data } = req.body;
+
+      if (event === 'charge.success' && data.status === 'success') {
+        console.log('Processing successful Paystack payment:', data.reference);
+        
+        // Update payment status
+        const { data: payment, error: updateError } = await supabase
           .from('payments')
-          .update({ status: 'confirmed' })
-          .eq('transaction_id', data.reference);
+          .update({ 
+            status: 'confirmed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('transaction_id', data.reference)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Failed to update payment:', updateError);
+          return res.status(500).json({ message: 'Failed to update payment' });
+        }
+
+        if (payment) {
+          // Activate premium subscription
+          await activatePremiumSubscription(payment.id);
+        }
       }
 
-      res.json({ message: 'Webhook processed' });
+      res.json({ message: 'Webhook processed successfully' });
     } catch (error) {
       console.error('Paystack webhook error:', error);
       res.status(500).json({ message: 'Webhook processing failed' });
@@ -1338,7 +1450,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
-        .update({ status })
+        .update({ 
+          status,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', paymentId)
         .select()
         .single();
@@ -1347,17 +1462,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If payment is confirmed, activate premium
       if (status === 'confirmed') {
-        const expiryDate = new Date();
-        const isYearly = payment.amount >= 2000; // Adjust based on your pricing
-        expiryDate.setDate(expiryDate.getDate() + (isYearly ? 365 : 30));
-
-        await supabase
-          .from('users')
-          .update({
-            is_premium: true,
-            premium_expires_at: expiryDate.toISOString(),
-          })
-          .eq('id', payment.user_id);
+        const success = await activatePremiumSubscription(paymentId);
+        if (!success) {
+          return res.status(500).json({ message: 'Failed to activate premium subscription' });
+        }
       }
 
       res.json({ message: 'Payment updated successfully', payment });

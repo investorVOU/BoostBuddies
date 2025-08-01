@@ -1,6 +1,28 @@
 
 import crypto from 'crypto';
 
+// Express middleware to parse raw body for webhooks
+export const rawBodyMiddleware = (req: any, res: any, next: any) => {
+  if (req.path.includes('/webhooks/')) {
+    let data = '';
+    req.setEncoding('utf8');
+    req.on('data', (chunk: string) => {
+      data += chunk;
+    });
+    req.on('end', () => {
+      req.rawBody = data;
+      try {
+        req.body = JSON.parse(data);
+      } catch (e) {
+        req.body = {};
+      }
+      next();
+    });
+  } else {
+    next();
+  }
+};
+
 // Flutterwave configuration
 export class FlutterwaveGateway {
   private secretKey: string;
