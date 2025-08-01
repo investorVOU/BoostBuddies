@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import bcrypt from "bcrypt";
 
 import { insertPostSchema, insertCommunitySchema, insertLiveEventSchema } from "@shared/schema";
 import { z } from "zod";
@@ -177,13 +178,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      // Create user (you should hash the password in production)
+      // Hash the password
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+      // Create user with hashed password
       const userId = `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       await storage.upsertUser({
         id: userId,
@@ -191,6 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName,
         lastName: lastName || '',
         profileImageUrl: null,
+        password: hashedPassword,
       });
 
       // Set session
@@ -216,17 +226,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user by email
       const user = await storage.getUserByEmail(email);
       if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      // In production, you should verify the hashed password
-      // For now, we'll assume the password is correct
+      // Check if user has a password (OAuth users might not have one)
+      if (!user.password) {
+        return res.status(401).json({ message: "Please use social login for this account" });
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
 
       // Set session
       (req as any).session.userId = user.id;
       (req as any).session.user = user;
 
-      res.json({ message: "Login successful", user });
+      res.json({ message: "Login successful", user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ message: "Login failed" });

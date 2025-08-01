@@ -182,8 +182,8 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
 });
 
 // Types
-export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type UpsertUser = typeof users.$inferInsert;
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type Post = typeof posts.$inferSelect;
 export type InsertCommunity = z.infer<typeof insertCommunitySchema>;

@@ -43,17 +43,28 @@ export default function Auth() {
       const response = await apiRequest(endpoint, "POST", data);
       return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: isLogin ? "Welcome back!" : "Account created!",
         description: isLogin ? "You have been logged in successfully." : "Your account has been created and you are now logged in.",
       });
-      window.location.href = "/";
+      // Small delay to show the success message before redirecting
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1000);
     },
     onError: (error: any) => {
+      let errorMessage = "An unexpected error occurred.";
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       toast({
         title: "Authentication failed",
-        description: error.message || "Please check your credentials and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
