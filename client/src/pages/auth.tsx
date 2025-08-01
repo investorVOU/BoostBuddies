@@ -40,7 +40,7 @@ export default function Auth() {
   const authMutation = useMutation({
     mutationFn: async (data: AuthFormData) => {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-      const response = await apiRequest(endpoint, "POST", JSON.stringify(data));
+      const response = await apiRequest(endpoint, "POST", data);
       return response;
     },
     onSuccess: () => {

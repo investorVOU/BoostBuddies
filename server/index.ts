@@ -9,14 +9,16 @@ app.use(express.urlencoded({ extended: false }));
 
 // Configure session
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: process.env.SESSION_SECRET || 'boost-buddies-session-secret-key-2024',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: false, // Set to true in production with HTTPS
     httpOnly: true,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax'
   },
+  name: 'boost-buddies-session'
 }));
 
 app.use((req, res, next) => {

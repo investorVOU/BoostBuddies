@@ -4,6 +4,10 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 
+import { insertPostSchema, insertCommunitySchema, insertLiveEventSchema } from "@shared/schema";
+import { z } from "zod";
+import { cacheMiddleware } from "./cache";
+
 // Simple session-based auth middleware
 const sessionAuth = (req: any, res: any, next: any) => {
   if (!req.session?.userId) {
@@ -11,9 +15,6 @@ const sessionAuth = (req: any, res: any, next: any) => {
   }
   next();
 };
-import { insertPostSchema, insertCommunitySchema, insertLiveEventSchema } from "@shared/schema";
-import { z } from "zod";
-import { cacheMiddleware } from "./cache";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -38,30 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all posts for the feed
-  app.get('/api/posts', sessionAuth, cacheMiddleware({ duration: 300 }), async (req, res) => {
-    try {
-      const posts = await storage.getAllPosts();
-      res.json(posts);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-      res.status(500).json({ message: "Failed to fetch posts" });
-    }
-  });
-
-  // Like a post
-  app.post('/api/posts/:id/like', sessionAuth, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const postId = req.params.id;
-
-      const like = await storage.likePost(userId, postId);
-      res.json(like);
-    } catch (error) {
-      console.error("Error liking post:", error);
-      res.status(500).json({ message: "Failed to like post" });
-    }
-  });
+  
 
   // OAuth routes
   app.get('/api/auth/google', (req, res) => {
@@ -265,7 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Posts routes
-  app.get('/api/posts', isAuthenticated, cacheMiddleware({ duration: 300 }), async (req: any, res) => {
+  app.get('/api/posts', sessionAuth, cacheMiddleware({ duration: 300 }), async (req: any, res) => {
     try {
       const posts = await storage.getAllPosts();
       res.json(posts);
@@ -275,9 +253,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/posts/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/posts/user', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const posts = await storage.getUserPosts(userId);
       res.json(posts);
     } catch (error) {
@@ -286,9 +264,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/posts', isAuthenticated, async (req: any, res) => {
+  app.post('/api/posts', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const postData = insertPostSchema.parse({ ...req.body, userId });
       const post = await storage.createPost(postData);
       res.status(201).json(post);
@@ -302,9 +280,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/posts/:id/like', isAuthenticated, async (req: any, res) => {
+  app.post('/api/posts/:id/like', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const postId = req.params.id;
 
       // Check if user already liked this post
@@ -325,9 +303,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User stats routes
-  app.get('/api/users/stats', isAuthenticated, async (req: any, res) => {
+  app.get('/api/users/stats', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const stats = await storage.getUserStats(userId);
       res.json(stats);
     } catch (error) {
@@ -336,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/users/leaderboard', isAuthenticated, async (req: any, res) => {
+  app.get('/api/users/leaderboard', sessionAuth, async (req: any, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
       const leaderboard = await storage.getLeaderboard(limit);
@@ -348,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Communities routes
-  app.get('/api/communities', isAuthenticated, cacheMiddleware({ duration: 600 }), async (req: any, res) => {
+  app.get('/api/communities', sessionAuth, cacheMiddleware({ duration: 600 }), async (req: any, res) => {
     try {
       const communities = await storage.getAllCommunities();
       res.json(communities);
@@ -358,9 +336,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/communities/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/communities/user', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const communities = await storage.getUserCommunities(userId);
       res.json(communities);
     } catch (error) {
@@ -369,9 +347,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/communities/:id/join', isAuthenticated, async (req: any, res) => {
+  app.post('/api/communities/:id/join', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const communityId = req.params.id;
       const membership = await storage.joinCommunity(userId, communityId);
       res.status(201).json(membership);
@@ -381,9 +359,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/communities/:id/leave', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/communities/:id/leave', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const communityId = req.params.id;
       const success = await storage.leaveCommunity(userId, communityId);
 
@@ -399,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Live events routes
-  app.get('/api/events', isAuthenticated, async (req: any, res) => {
+  app.get('/api/events', sessionAuth, async (req: any, res) => {
     try {
       const events = await storage.getLiveEvents();
       res.json(events);
@@ -409,9 +387,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/events', isAuthenticated, async (req: any, res) => {
+  app.post('/api/events', sessionAuth, async (req: any, res) => {
     try {
-      const hostId = req.user.claims.sub;
+      const hostId = req.session.userId;
       const eventData = insertLiveEventSchema.parse({ ...req.body, hostId });
       const event = await storage.createLiveEvent(eventData);
       res.status(201).json(event);
@@ -426,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Collab spotlight routes
-  app.get('/api/collabs', isAuthenticated, async (req: any, res) => {
+  app.get('/api/collabs', sessionAuth, async (req: any, res) => {
     try {
       const collabs = await storage.getActiveCollabSpotlights();
       res.json(collabs);
@@ -437,9 +415,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Premium subscription routes
-  app.post('/api/premium/payment', isAuthenticated, async (req: any, res) => {
+  app.post('/api/premium/payment', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const paymentData = { ...req.body, userId };
       const payment = await storage.createPayment(paymentData);
       res.status(201).json(payment);
@@ -449,9 +427,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/premium/status', isAuthenticated, async (req: any, res) => {
+  app.get('/api/premium/status', sessionAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const subscription = await storage.getUserSubscription(userId);
       res.json(subscription);
     } catch (error) {
@@ -460,7 +438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/crypto-addresses', isAuthenticated, async (req: any, res) => {
+  app.get('/api/crypto-addresses', sessionAuth, async (req: any, res) => {
     try {
       const addresses = await storage.getCryptoAddresses();
       res.json(addresses);
