@@ -121,6 +121,17 @@ CREATE TABLE IF NOT EXISTS payments (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Admin logs table
+CREATE TABLE IF NOT EXISTS admin_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id VARCHAR NOT NULL REFERENCES users(id),
+  action VARCHAR NOT NULL,
+  details TEXT,
+  ip_address VARCHAR,
+  user_agent TEXT,
+  timestamp TIMESTAMP DEFAULT NOW()
+);
+
 -- Crypto addresses table
 CREATE TABLE IF NOT EXISTS crypto_addresses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -15,6 +15,7 @@ import SubmitPost from "@/pages/submit-post";
 import Communities from "@/pages/communities";
 import Analytics from "@/pages/analytics";
 import Premium from "@/pages/premium";
+import AdminDashboard from "@/pages/admin";
 import About from "@/pages/about";
 import HowItWorks from "@/pages/how-it-works";
 import NotFound from "@/pages/not-found";
@@ -152,6 +153,10 @@ export default function App() {
           ) : (
             <Auth />
           )}
+        </Route>
+
+        <Route path="/admin">
+          {isAuthenticated ? <AdminDashboard /> : <Auth />}
         </Route>
 
         <Route path="/profile">

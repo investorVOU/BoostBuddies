@@ -17,6 +17,8 @@ Preferred communication style: Simple, everyday language.
 - Fixed column name mapping between camelCase (frontend) and snake_case (database)
 - Both registration and login now working with Supabase database
 - User accounts stored with proper password hashing and validation
+- Created exclusive admin dashboard accessible only to the project owner
+- Added admin login tracking with admin_logs table in Supabase database
 
 # System Architecture
 

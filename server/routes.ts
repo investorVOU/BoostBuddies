@@ -281,6 +281,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes - restricted to admin users only
+  const adminAuth = async (req: any, res: any, next: any) => {
+    if (!req.session?.user?.email) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    // Check if user is admin by email
+    if (req.session.user.email !== 'directtest@example.com') { // Replace with your actual admin email
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    
+    // Try to log admin access (table may not exist yet)
+    try {
+      await supabase.from('admin_logs').insert({
+        admin_id: req.session.user.id,
+        action: `${req.method} ${req.path}`,
+        details: `Admin accessed: ${req.path}`,
+        ip_address: req.ip,
+        user_agent: req.get('User-Agent'),
+        timestamp: new Date().toISOString()
+      });
+    } catch (logError) {
+      console.log('Admin log failed (table may not exist):', logError.message);
+    }
+    
+    next();
+  };
+
+  app.get('/api/admin/status', async (req: any, res) => {
+    try {
+      if (!req.session?.user?.email) {
+        return res.json({ isAdmin: false });
+      }
+      
+      // Check if current user is admin by email
+      const isAdmin = req.session.user.email === 'directtest@example.com'; // Replace with your actual admin email
+      
+      console.log('Admin check:', { email: req.session.user.email, isAdmin });
+      res.json({ isAdmin });
+    } catch (error) {
+      console.error('Admin status check error:', error);
+      res.json({ isAdmin: false });
+    }
+  });
+
+  app.get('/api/admin/users', adminAuth, async (req: any, res) => {
+    try {
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Convert to camelCase for frontend
+      const convertedUsers = users.map(user => ({
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        profileImageUrl: user.profile_image_url,
+        points: user.points,
+        isPremium: user.is_premium,
+        premiumExpiresAt: user.premium_expires_at,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at,
+      }));
+      
+      res.json(convertedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get('/api/admin/stats', adminAuth, async (req: any, res) => {
+    try {
+      const [usersResult, postsResult, communitiesResult, adminLogsResult] = await Promise.all([
+        supabase.from('users').select('id', { count: 'exact' }),
+        supabase.from('posts').select('id', { count: 'exact' }),
+        supabase.from('communities').select('id', { count: 'exact' }),
+        supabase.from('admin_logs').select('id', { count: 'exact' })
+      ]);
+
+      res.json({
+        totalUsers: usersResult.count || 0,
+        activePosts: postsResult.count || 0,
+        totalCommunities: communitiesResult.count || 0,
+        adminLogins: adminLogsResult.count || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  app.get('/api/admin/logs', adminAuth, async (req: any, res) => {
+    try {
+      const { data: logs, error } = await supabase
+        .from('admin_logs')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      
+      res.json(logs || []);
+    } catch (error) {
+      console.error('Error fetching admin logs:', error);
+      res.status(500).json({ message: "Failed to fetch admin logs" });
+    }
+  });
+
+  app.patch('/api/admin/users/:userId', adminAuth, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const updates = req.body;
+      
+      // Convert camelCase to snake_case for database
+      const dbUpdates: any = {};
+      if (updates.isPremium !== undefined) dbUpdates.is_premium = updates.isPremium;
+      if (updates.points !== undefined) dbUpdates.points = updates.points;
+      dbUpdates.updated_at = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('users')
+        .update(dbUpdates)
+        .eq('id', userId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      res.json({ message: "User updated successfully", user: data });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
   // Posts routes
   app.get('/api/posts', sessionAuth, cacheMiddleware({ duration: 300 }), async (req: any, res) => {
     try {
