@@ -13,22 +13,36 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-const authSchema = z.object({
+const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  firstName: z.string().min(1, "First name is required").optional(),
-  lastName: z.string().min(1, "Last name is required").optional(),
+  password: z.string().min(1, "Password is required"),
 });
 
-type AuthFormData = z.infer<typeof authSchema>;
+const registerSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   
-  const form = useForm<AuthFormData>({
-    resolver: zodResolver(authSchema),
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const registerForm = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
       password: "",
@@ -38,7 +52,7 @@ export default function Auth() {
   });
 
   const authMutation = useMutation({
-    mutationFn: async (data: AuthFormData) => {
+    mutationFn: async (data: LoginFormData | RegisterFormData) => {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const response = await apiRequest(endpoint, "POST", data);
       return response;
@@ -58,8 +72,6 @@ export default function Auth() {
       
       if (error.message) {
         errorMessage = error.message;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
       }
       
       toast({
@@ -71,16 +83,18 @@ export default function Auth() {
   });
 
   const handleGoogleLogin = () => {
-    // Implement Google OAuth login
     window.location.href = "/api/auth/google";
   };
 
   const handleTwitterLogin = () => {
-    // Implement Twitter OAuth login
     window.location.href = "/api/auth/twitter";
   };
 
-  const onSubmit = (data: AuthFormData) => {
+  const onLoginSubmit = (data: LoginFormData) => {
+    authMutation.mutate(data);
+  };
+
+  const onRegisterSubmit = (data: RegisterFormData) => {
     authMutation.mutate(data);
   };
 
@@ -133,12 +147,78 @@ export default function Auth() {
           </div>
 
           {/* Email/Password Form */}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {!isLogin && (
+          {isLogin ? (
+            <Form {...loginForm}>
+              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                <FormField
+                  control={loginForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">Email Address</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="your@email.com"
+                          className="h-12 border-2 focus:border-blue-400"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={loginForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter your password"
+                            className="h-12 border-2 focus:border-blue-400 pr-12"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  disabled={authMutation.isPending}
+                >
+                  <Mail className="mr-2 h-5 w-5" />
+                  {authMutation.isPending ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+            </Form>
+          ) : (
+            <Form {...registerForm}>
+              <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
-                    control={form.control}
+                    control={registerForm.control}
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
@@ -156,7 +236,7 @@ export default function Auth() {
                   />
                   
                   <FormField
-                    control={form.control}
+                    control={registerForm.control}
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
@@ -173,76 +253,71 @@ export default function Auth() {
                     )}
                   />
                 </div>
-              )}
-              
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Email Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="your@email.com"
-                        className="h-12 border-2 focus:border-blue-400"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
+                
+                <FormField
+                  control={registerForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">Email Address</FormLabel>
+                      <FormControl>
                         <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Enter your password"
-                          className="h-12 border-2 focus:border-blue-400 pr-12"
+                          type="email"
+                          placeholder="your@email.com"
+                          className="h-12 border-2 focus:border-blue-400"
                           {...field}
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-gray-500" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-gray-500" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Button
-                type="submit"
-                className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                disabled={authMutation.isPending}
-              >
-                <Mail className="mr-2 h-5 w-5" />
-                {authMutation.isPending 
-                  ? "Please wait..." 
-                  : isLogin 
-                    ? "Sign In" 
-                    : "Create Account"
-                }
-              </Button>
-            </form>
-          </Form>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={registerForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700 font-medium">Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter your password"
+                            className="h-12 border-2 focus:border-blue-400 pr-12"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  disabled={authMutation.isPending}
+                >
+                  <Mail className="mr-2 h-5 w-5" />
+                  {authMutation.isPending ? "Creating account..." : "Create Account"}
+                </Button>
+              </form>
+            </Form>
+          )}
 
           <div className="text-center">
             <Button

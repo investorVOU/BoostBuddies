@@ -8,18 +8,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Configure session
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'boost-buddies-session-secret-key-2024',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set to true in production with HTTPS
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax'
-  },
-  name: 'boost-buddies-session'
-}));
+app.use(
+  session({
+    store: new (require('connect-pg-simple')(session))({
+      conString: process.env.DATABASE_URL,
+      tableName: 'sessions',
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET || 'your-super-secret-session-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to false for development
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax',
+    },
+  })
+);
 
 app.use((req, res, next) => {
   const start = Date.now();

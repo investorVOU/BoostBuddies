@@ -10,36 +10,47 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Add the missing getAuthToken function
-export function getAuthToken(): string | null {
-  return null; // Session-based auth, no token needed
-}
+export async function apiRequest(endpoint: string, method: string = "GET", data?: any) {
+  const url = endpoint.startsWith('http') ? endpoint : `${window.location.origin}${endpoint}`;
 
-export async function apiRequest(
-  endpoint: string,
-  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
-  body?: any
-) {
-  const options: RequestInit = {
+  const config: RequestInit = {
     method,
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include", // Important for session cookies
   };
 
-  if (body && method !== "GET") {
-    options.body = JSON.stringify(body);
+  if (data && method !== "GET") {
+    config.body = JSON.stringify(data);
   }
 
-  const response = await fetch(endpoint, options);
+  try {
+    const response = await fetch(url, config);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `HTTP ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: "Request failed" }));
+      const error = new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      throw error;
+    }
+
+    // Handle empty responses
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return await response.json();
+    }
+
+    return await response.text();
+  } catch (error) {
+    console.error("API Request failed:", error);
+    throw error;
   }
+}
 
-  return response.json();
+export function getAuthToken() {
+  // This function is not needed for session-based auth
+  // but we'll keep it to prevent the "getAuthToken is not defined" error
+  return null;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
