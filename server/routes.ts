@@ -228,6 +228,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Premium subscription routes
+  app.post('/api/premium/payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const paymentData = { ...req.body, userId };
+      const payment = await storage.createPayment(paymentData);
+      res.status(201).json(payment);
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      res.status(500).json({ message: "Failed to process payment" });
+    }
+  });
+
+  app.get('/api/premium/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscription = await storage.getUserSubscription(userId);
+      res.json(subscription);
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+      res.status(500).json({ message: "Failed to fetch subscription status" });
+    }
+  });
+
+  app.get('/api/crypto-addresses', isAuthenticated, async (req: any, res) => {
+    try {
+      const addresses = await storage.getCryptoAddresses();
+      res.json(addresses);
+    } catch (error) {
+      console.error("Error fetching crypto addresses:", error);
+      res.status(500).json({ message: "Failed to fetch crypto addresses" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time features

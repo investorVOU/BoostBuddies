@@ -1,28 +1,23 @@
-
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger,
-  DropdownMenuSeparator 
-} from "@/components/ui/dropdown-menu";
-import { LogOut, Camera, Settings, User, Bell } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Bell, User, Settings, LogOut, Camera, Crown } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Header() {
-  const { user } = useAuth();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const [showPhotoDialog, setShowPhotoDialog] = useState(false);
 
   const handleLogout = () => {
-    window.location.href = '/api/logout';
+    logout();
   };
 
   const handleChangePhoto = () => {
-    // TODO: Implement photo change functionality
-    console.log("Change photo clicked");
+    setShowPhotoDialog(true);
   };
 
   const handleSettings = () => {
@@ -44,7 +39,7 @@ export default function Header() {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           {/* Points Display */}
           <div className="flex items-center space-x-2 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-full px-4 py-2 shadow-sm">
@@ -52,31 +47,28 @@ export default function Header() {
             <span className="font-bold text-gray-900">{user?.points || 0}</span>
             <span className="text-sm text-gray-600 font-medium">pts</span>
           </div>
-          
+
           {/* Notifications */}
           <Button variant="ghost" size="sm" className="relative p-2 hover:bg-gray-100 rounded-full">
             <Bell className="h-5 w-5 text-gray-600" />
-            <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center p-0 border-2 border-white">
+            {/* Example Notification Badge */}
+            {/* <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center p-0 border-2 border-white">
               3
-            </Badge>
+            </Badge> */}
           </Button>
-          
+
           {/* Profile Menu */}
-          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative p-0 rounded-full">
-                <img 
-                  src={user?.profileImageUrl || `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100`}
-                  alt="Profile" 
-                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-blue-400 transition-colors shadow-sm"
-                />
+                <Avatar className="w-10 h-10">
+                  <AvatarImage src={user?.profileImageUrl || `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100`} alt={user?.firstName} />
+                  <AvatarFallback>{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</AvatarFallback>
+                </Avatar>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="end" 
-              className="w-56 mt-2 bg-white border border-gray-200 shadow-xl rounded-lg"
-            >
+            <DropdownMenuContent align="end">
               <div className="px-3 py-2 border-b border-gray-100">
                 <p className="text-sm font-semibold text-gray-900">
                   {user?.firstName} {user?.lastName}
@@ -85,43 +77,47 @@ export default function Header() {
                   {user?.email}
                 </p>
               </div>
-              
-              <DropdownMenuItem 
-                onClick={handleChangePhoto}
-                className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
-              >
-                <Camera className="h-4 w-4 text-gray-600" />
-                <span className="text-sm text-gray-700">Change Profile Photo</span>
+              <DropdownMenuItem onClick={handleChangePhoto}>
+                <Camera className="w-4 h-4 mr-2" />
+                <span>Change Photo</span>
               </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                onClick={handleSettings}
-                className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
-              >
-                <Settings className="h-4 w-4 text-gray-600" />
-                <span className="text-sm text-gray-700">Settings</span>
+              <DropdownMenuItem onClick={handleSettings}>
+                <Settings className="w-4 h-4 mr-2" />
+                <span>Settings</span>
               </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
-              >
-                <User className="h-4 w-4 text-gray-600" />
-                <span className="text-sm text-gray-700">View Profile</span>
+              <DropdownMenuItem>
+                <User className="w-4 h-4 mr-2" />
+                <span>Profile</span>
               </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="my-1 bg-gray-100" />
-              
-              <DropdownMenuItem 
-                onClick={handleLogout}
-                className="flex items-center space-x-3 px-3 py-2 hover:bg-red-50 cursor-pointer text-red-600"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="text-sm font-medium">Log Out</span>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Change Photo Dialog */}
+      <Dialog open={showPhotoDialog} onOpenChange={setShowPhotoDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Profile Photo</DialogTitle>
+            <DialogDescription>
+              Upload a new photo to update your profile picture.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="picture" className="text-right">
+                Picture
+              </Label>
+              <Input id="picture" defaultValue="avatar.jpg" className="col-span-3" />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

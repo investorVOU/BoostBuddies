@@ -34,6 +34,8 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   points: integer("points").default(0),
+  isPremium: boolean("is_premium").default(false),
+  premiumExpiresAt: timestamp("premium_expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -103,6 +105,37 @@ export const collabSpotlights = pgTable("collab_spotlights", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const subscriptions = pgTable("subscriptions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  plan: varchar("plan").notNull(), // monthly, yearly
+  status: varchar("status").default("active"), // active, cancelled, expired
+  startDate: timestamp("start_date").defaultNow(),
+  endDate: timestamp("end_date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  gateway: varchar("gateway").notNull(), // flutterwave, paystack, crypto
+  cryptoType: varchar("crypto_type"), // btc, eth, usdt, matic
+  transactionId: varchar("transaction_id").notNull(),
+  amount: integer("amount").notNull(), // in cents
+  currency: varchar("currency").default("USD"),
+  status: varchar("status").default("pending"), // pending, confirmed, failed
+  subscriptionId: uuid("subscription_id").references(() => subscriptions.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const cryptoAddresses = pgTable("crypto_addresses", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  cryptoType: varchar("crypto_type").notNull(),
+  address: varchar("address").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -135,6 +168,19 @@ export const insertLiveEventSchema = createInsertSchema(liveEvents).omit({
   endedAt: true,
 });
 
+export const insertPaymentSchema = createInsertSchema(payments).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  subscriptionId: true,
+});
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -147,3 +193,8 @@ export type PostLike = typeof postLikes.$inferSelect;
 export type InsertLiveEvent = z.infer<typeof insertLiveEventSchema>;
 export type LiveEvent = typeof liveEvents.$inferSelect;
 export type CollabSpotlight = typeof collabSpotlights.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type Payment = typeof payments.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type CryptoAddress = typeof cryptoAddresses.$inferSelect;

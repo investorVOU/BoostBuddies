@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,10 +87,79 @@ export default function Feed() {
   const queryClient = useQueryClient();
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
 
-  const { data: posts = [], isLoading } = useQuery<Post[]>({
+  const { data: posts = [], isLoading } = useQuery({
     queryKey: ["/api/posts"],
     retry: false,
   });
+
+  // Demo posts for demonstration
+  const demoPosts = [
+    {
+      id: "demo-1",
+      userId: "demo-user-1",
+      platform: "youtube",
+      url: "https://youtube.com/watch?v=demo1",
+      title: "Amazing React Tutorial - Build a Full-Stack App in 2024",
+      description: "Learn how to build a complete React application with TypeScript, Tailwind CSS, and Node.js backend. Perfect for beginners!",
+      status: "approved",
+      likesReceived: 47,
+      likesNeeded: 50,
+      shares: 12,
+      comments: 8,
+      pointsEarned: 50,
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      user: {
+        firstName: "Sarah",
+        lastName: "Johnson",
+        profileImageUrl: "https://images.unsplash.com/photo-1494790108755-2616b612b47c?ixlib=rb-4.0.3&w=150&h=150&fit=crop",
+        isPremium: true,
+      }
+    },
+    {
+      id: "demo-2",
+      userId: "demo-user-2",
+      platform: "twitter",
+      url: "https://twitter.com/user/status/demo2",
+      title: "10 JavaScript Tips That Will Blow Your Mind 🤯",
+      description: "Thread about advanced JavaScript concepts that every developer should know. Includes ES6+ features and performance tips.",
+      status: "pending",
+      likesReceived: 23,
+      likesNeeded: 50,
+      shares: 5,
+      comments: 3,
+      pointsEarned: 0,
+      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+      user: {
+        firstName: "Mike",
+        lastName: "Chen",
+        profileImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&w=150&h=150&fit=crop",
+        isPremium: false,
+      }
+    },
+    {
+      id: "demo-3",
+      userId: "demo-user-3",
+      platform: "tiktok",
+      url: "https://tiktok.com/@user/video/demo3",
+      title: "Day in the Life of a Software Developer",
+      description: "Follow my coding routine, productivity tips, and the tools I use daily as a full-stack developer working remotely.",
+      status: "approved",
+      likesReceived: 89,
+      likesNeeded: 50,
+      shares: 34,
+      comments: 21,
+      pointsEarned: 50,
+      createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
+      user: {
+        firstName: "Emma",
+        lastName: "Rodriguez",
+        profileImageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&w=150&h=150&fit=crop",
+        isPremium: true,
+      }
+    }
+  ];
+
+  const allPosts = [...demoPosts, ...posts];
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
@@ -131,8 +199,8 @@ export default function Feed() {
   });
 
   // Use demo posts if no real posts exist
-  const allPosts = posts.length > 0 ? posts : demoPosts;
-  const filteredPosts = allPosts.filter((post: any) => 
+  const allPosts2 = posts.length > 0 ? posts : demoPosts;
+  const filteredPosts = allPosts2.filter((post: any) => 
     selectedPlatform === "all" || post.platform === selectedPlatform
   );
 
@@ -160,7 +228,7 @@ export default function Feed() {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+
     if (diffInHours < 1) return "Just now";
     if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
@@ -259,29 +327,34 @@ export default function Feed() {
       </div>
 
       {/* Posts Grid */}
-      {filteredPosts.length === 0 ? (
-        <Card className="border-0 shadow-xl">
-          <CardContent className="py-16 text-center">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <MessageCircle className="w-12 h-12 text-gray-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">No posts yet</h3>
-            <p className="text-gray-500 max-w-md mx-auto mb-6">
-              Be the first to submit a post for community engagement and start earning points!
-            </p>
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-              onClick={() => window.location.href = "/submit"}
-            >
-              Submit Your First Post
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {filteredPosts.map((post: any) => (
-            <Card key={post.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
+      {isLoading ? (
+          <div className="space-y-6">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-6">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : allPosts.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i className="fas fa-stream text-2xl text-gray-400"></i>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No posts yet</h3>
+              <p className="text-gray-500 mb-4">Be the first to share your content!</p>
+              <Button onClick={() => window.location.href = '/submit'}>
+                Submit Your First Post
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            {allPosts.map((post: any) => (
+              <Card key={post.id} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -328,12 +401,12 @@ export default function Feed() {
                   </Button>
                 </div>
               </CardHeader>
-              
+
               <CardContent>
                 {post.description && (
                   <p className="text-gray-700 mb-6 leading-relaxed">{post.description}</p>
                 )}
-                
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-6">
                     <Button
@@ -346,18 +419,18 @@ export default function Feed() {
                       <Heart className={`h-5 w-5 ${(post.likesReceived || 0) > 0 ? 'fill-red-500 text-red-500' : ''}`} />
                       <span className="font-semibold">{post.likesReceived || 0}</span>
                     </Button>
-                    
+
                     <div className="flex items-center gap-2 text-gray-600">
                       <Share2 className="h-5 w-5" />
                       <span className="font-semibold">{post.shares}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-gray-600">
                       <MessageCircle className="h-5 w-5" />
                       <span className="font-semibold">{post.comments}</span>
                     </div>
                   </div>
-                  
+
                   <div className="text-sm font-medium">
                     {post.status === "pending" && (
                       <span className="text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
@@ -373,9 +446,9 @@ export default function Feed() {
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
       {/* Call to Action */}
       <Card className="mt-12 border-0 shadow-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white">

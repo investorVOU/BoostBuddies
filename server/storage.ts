@@ -6,6 +6,9 @@ import {
   postLikes,
   liveEvents,
   collabSpotlights,
+  subscriptions,
+  payments,
+  cryptoAddresses,
   type User,
   type UpsertUser,
   type Post,
@@ -17,6 +20,11 @@ import {
   type LiveEvent,
   type InsertLiveEvent,
   type CollabSpotlight,
+  type Payment,
+  type InsertPayment,
+  type Subscription,
+  type InsertSubscription,
+  type CryptoAddress,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, count } from "drizzle-orm";
@@ -69,6 +77,12 @@ export interface IStorage {
     points: number;
   }>;
   getLeaderboard(limit?: number): Promise<User[]>;
+
+  // Premium operations
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  getUserSubscription(userId: string): Promise<Subscription | undefined>;
+  createSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  getCryptoAddresses(): Promise<CryptoAddress[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -137,6 +151,30 @@ export class DatabaseStorage implements IStorage {
           scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
           participantCount: 0,
         }
+      ]);
+
+      // Seed crypto addresses
+      await db.insert(cryptoAddresses).values([
+        {
+          cryptoType: "btc",
+          address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+          isActive: true,
+        },
+        {
+          cryptoType: "eth",
+          address: "0x742d35Cc6634C0532925a3b8D6f9C0d9D5b1e3a2",
+          isActive: true,
+        },
+        {
+          cryptoType: "usdt",
+          address: "0x742d35Cc6634C0532925a3b8D6f9C0d9D5b1e3a2",
+          isActive: true,
+        },
+        {
+          cryptoType: "matic",
+          address: "0x742d35Cc6634C0532925a3b8D6f9C0d9D5b1e3a2",
+          isActive: true,
+        },
       ]);
     } catch (error) {
       console.log('Seed data already exists or error seeding:', error);
@@ -422,6 +460,40 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .orderBy(desc(users.points))
       .limit(limit);
+  }
+
+  // Premium operations
+  async createPayment(paymentData: InsertPayment): Promise<Payment> {
+    const [payment] = await db
+      .insert(payments)
+      .values({ ...paymentData, status: "pending" })
+      .returning();
+    return payment;
+  }
+
+  async getUserSubscription(userId: string): Promise<Subscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .orderBy(desc(subscriptions.createdAt))
+      .limit(1);
+    return subscription;
+  }
+
+  async createSubscription(subscriptionData: InsertSubscription): Promise<Subscription> {
+    const [subscription] = await db
+      .insert(subscriptions)
+      .values(subscriptionData)
+      .returning();
+    return subscription;
+  }
+
+  async getCryptoAddresses(): Promise<CryptoAddress[]> {
+    return await db
+      .select()
+      .from(cryptoAddresses)
+      .where(eq(cryptoAddresses.isActive, true));
   }
 
   private mapRowToPost(row: any): Post {
