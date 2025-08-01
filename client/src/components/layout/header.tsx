@@ -1,51 +1,125 @@
+
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator 
+} from "@/components/ui/dropdown-menu";
+import { LogOut, Camera, Settings, User, Bell } from "lucide-react";
 
 export default function Header() {
   const { user } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const handleLogout = () => {
+    window.location.href = '/api/logout';
+  };
+
+  const handleChangePhoto = () => {
+    // TODO: Implement photo change functionality
+    console.log("Change photo clicked");
+  };
+
+  const handleSettings = () => {
+    // TODO: Navigate to settings page
+    console.log("Settings clicked");
+  };
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-4 lg:px-8">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-4 lg:px-8 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <button className="lg:hidden text-gray-500">
+          <button className="lg:hidden text-gray-500 hover:text-gray-700 transition-colors">
             <i className="fas fa-bars text-xl"></i>
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-sm text-gray-500">
-              Welcome back, <span className="font-medium">{user?.firstName || "Creator"}</span>!
+              Welcome back, <span className="font-semibold text-blue-600">{user?.firstName || "Creator"}</span>!
             </p>
           </div>
         </div>
         
         <div className="flex items-center space-x-4">
           {/* Points Display */}
-          <div className="flex items-center space-x-2 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-full px-4 py-2">
+          <div className="flex items-center space-x-2 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-full px-4 py-2 shadow-sm">
             <i className="fas fa-coins text-green-500"></i>
-            <span className="font-semibold text-gray-900">{user?.points || 0}</span>
-            <span className="text-sm text-gray-600">pts</span>
+            <span className="font-bold text-gray-900">{user?.points || 0}</span>
+            <span className="text-sm text-gray-600 font-medium">pts</span>
           </div>
           
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative p-2">
-            <i className="fas fa-bell text-xl"></i>
-            <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center p-0">
+          <Button variant="ghost" size="sm" className="relative p-2 hover:bg-gray-100 rounded-full">
+            <Bell className="h-5 w-5 text-gray-600" />
+            <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center p-0 border-2 border-white">
               3
             </Badge>
           </Button>
           
           {/* Profile Menu */}
-          <div className="relative">
-            <img 
-              src={user?.profileImageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100"}
-              alt="Profile" 
-              className="w-10 h-10 rounded-full object-cover cursor-pointer"
-              onClick={() => window.location.href = '/api/logout'}
-              title="Click to logout"
-            />
-          </div>
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative p-0 rounded-full">
+                <img 
+                  src={user?.profileImageUrl || `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&h=100`}
+                  alt="Profile" 
+                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-blue-400 transition-colors shadow-sm"
+                />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="end" 
+              className="w-56 mt-2 bg-white border border-gray-200 shadow-xl rounded-lg"
+            >
+              <div className="px-3 py-2 border-b border-gray-100">
+                <p className="text-sm font-semibold text-gray-900">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {user?.email}
+                </p>
+              </div>
+              
+              <DropdownMenuItem 
+                onClick={handleChangePhoto}
+                className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+              >
+                <Camera className="h-4 w-4 text-gray-600" />
+                <span className="text-sm text-gray-700">Change Profile Photo</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                onClick={handleSettings}
+                className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+              >
+                <Settings className="h-4 w-4 text-gray-600" />
+                <span className="text-sm text-gray-700">Settings</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                className="flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+              >
+                <User className="h-4 w-4 text-gray-600" />
+                <span className="text-sm text-gray-700">View Profile</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator className="my-1 bg-gray-100" />
+              
+              <DropdownMenuItem 
+                onClick={handleLogout}
+                className="flex items-center space-x-3 px-3 py-2 hover:bg-red-50 cursor-pointer text-red-600"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="text-sm font-medium">Log Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

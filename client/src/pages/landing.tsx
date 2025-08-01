@@ -1,151 +1,225 @@
+
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Star, Users, TrendingUp, Zap, Shield, Globe, Heart } from "lucide-react";
 
 export default function Landing() {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    window.location.href = "/";
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center max-w-4xl mx-auto">
-          <div className="flex items-center justify-center space-x-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <i className="fas fa-rocket text-white text-xl"></i>
+      <section className="relative overflow-hidden pt-20 pb-32">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
+        <div className="relative container mx-auto px-6 text-center">
+          <Badge className="mb-6 bg-white/90 text-blue-600 border-blue-200 font-medium px-4 py-2">
+            🚀 Join 10,000+ creators already boosting their content
+          </Badge>
+          
+          <h1 className="font-display text-6xl md:text-7xl lg:text-8xl font-bold text-gray-900 mb-8 leading-tight">
+            Boost Your
+            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent block">
+              Social Reach
+            </span>
+          </h1>
+          
+          <p className="font-body text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
+            Connect with a thriving community of creators. Share your content, engage authentically, 
+            and watch your social media presence grow exponentially.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+            <Button 
+              size="lg" 
+              className="font-heading bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-2xl hover:shadow-3xl transition-all duration-300 btn-glow"
+              onClick={() => window.location.href = '/auth'}
+            >
+              <Zap className="mr-2 h-5 w-5" />
+              Start Boosting Free
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg"
+              className="font-heading border-2 border-gray-300 hover:border-blue-400 px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300"
+            >
+              Watch Demo
+            </Button>
+          </div>
+
+          {/* Social Proof */}
+          <div className="flex flex-wrap justify-center items-center gap-8 text-gray-500 mb-16">
+            <div className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-500 fill-current" />
+              <span className="font-medium">4.9/5 Rating</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              BoostBuddies
-            </h1>
-          </div>
-          
-          <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
-            The social engagement platform that helps creators boost their content across 
-            <span className="text-blue-600 font-semibold"> Twitter</span>, 
-            <span className="text-blue-600 font-semibold"> Facebook</span>, 
-            <span className="text-red-600 font-semibold"> YouTube</span>, and 
-            <span className="text-purple-600 font-semibold"> TikTok</span>
-          </p>
-          
-          <div className="flex flex-wrap justify-center gap-4 mb-12">
-            <Badge variant="secondary" className="px-4 py-2 text-sm">
-              <i className="fas fa-users mr-2"></i>
-              Community Driven
-            </Badge>
-            <Badge variant="secondary" className="px-4 py-2 text-sm">
-              <i className="fas fa-star mr-2"></i>
-              Points & Rewards
-            </Badge>
-            <Badge variant="secondary" className="px-4 py-2 text-sm">
-              <i className="fas fa-chart-line mr-2"></i>
-              Real Analytics
-            </Badge>
-            <Badge variant="secondary" className="px-4 py-2 text-sm">
-              <i className="fas fa-mobile-alt mr-2"></i>
-              Mobile First
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-500" />
+              <span className="font-medium">10k+ Active Users</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-green-500" />
+              <span className="font-medium">500% Avg Growth</span>
+            </div>
           </div>
 
-          <Button 
-            size="lg" 
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-            onClick={() => window.location.href = '/api/login'}
-          >
-            <i className="fas fa-sign-in-alt mr-2"></i>
-            Get Started Free
-          </Button>
+          {/* Feature Preview */}
+          <div className="relative max-w-4xl mx-auto">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-3xl"></div>
+            <img 
+              src="https://images.unsplash.com/photo-1551650975-87deedd944c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1974&q=80"
+              alt="Dashboard Preview"
+              className="relative w-full rounded-2xl shadow-2xl border border-white/20"
+            />
+          </div>
         </div>
+      </section>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-20">
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur">
-            <CardContent className="p-6">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-share-alt text-blue-500 text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Cross-Platform Boosting</h3>
-              <p className="text-gray-600">
-                Share your content links from Twitter, Facebook, YouTube, and TikTok to get genuine engagement from our community.
-              </p>
-            </CardContent>
-          </Card>
+      {/* Features Section */}
+      <section className="py-24 bg-white/50 backdrop-blur-sm">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="font-display text-5xl font-bold text-gray-900 mb-6">
+              Why Creators Choose 
+              <span className="text-blue-600"> BoostBuddies</span>
+            </h2>
+            <p className="font-body text-xl text-gray-600 max-w-2xl mx-auto">
+              Everything you need to grow your social media presence organically and build authentic engagement.
+            </p>
+          </div>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur">
-            <CardContent className="p-6">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-users text-purple-500 text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Community Moderation</h3>
-              <p className="text-gray-600">
-                Like 10 posts to get your content approved. Fair, community-driven moderation that prevents spam and promotes quality.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Card className="card-hover border-0 shadow-xl bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardContent className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                  <Globe className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-gray-900 mb-4">Cross-Platform Boosting</h3>
+                <p className="font-body text-gray-600 leading-relaxed">
+                  Share content from Twitter, Facebook, YouTube, and TikTok to get genuine engagement from our global community of creators.
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur">
-            <CardContent className="p-6">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-coins text-green-500 text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Points & Rewards</h3>
-              <p className="text-gray-600">
-                Earn points for engaging with others' content. Climb the leaderboard and unlock special features and recognition.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="card-hover border-0 shadow-xl bg-gradient-to-br from-purple-50 to-purple-100">
+              <CardContent className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                  <Zap className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-gray-900 mb-4">Instant Engagement</h3>
+                <p className="font-body text-gray-600 leading-relaxed">
+                  Get real likes, shares, and comments within minutes of posting. Our community is active 24/7 across all time zones.
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur">
-            <CardContent className="p-6">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-chart-bar text-orange-500 text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Analytics Dashboard</h3>
-              <p className="text-gray-600">
-                Track your engagement metrics, monitor performance, and see how your content performs across all platforms.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="card-hover border-0 shadow-xl bg-gradient-to-br from-green-50 to-green-100">
+              <CardContent className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-6">
+                  <Heart className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-gray-900 mb-4">Authentic Community</h3>
+                <p className="font-body text-gray-600 leading-relaxed">
+                  Connect with real creators who understand your journey. Build meaningful relationships beyond just numbers.
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur">
-            <CardContent className="p-6">
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-broadcast-tower text-red-500 text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Live Events</h3>
-              <p className="text-gray-600">
-                Join live Q&A sessions, watch parties, and community events. Connect with creators in real-time.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="card-hover border-0 shadow-xl bg-gradient-to-br from-yellow-50 to-yellow-100">
+              <CardContent className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center mb-6">
+                  <TrendingUp className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-gray-900 mb-4">Growth Analytics</h3>
+                <p className="font-body text-gray-600 leading-relaxed">
+                  Track your progress with detailed analytics and insights. See which content performs best and optimize your strategy.
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/80 backdrop-blur">
-            <CardContent className="p-6">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-star text-yellow-500 text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Collab Spotlight</h3>
-              <p className="text-gray-600">
-                Get featured in our weekly collaboration spotlight when you work with other creators on amazing projects.
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="card-hover border-0 shadow-xl bg-gradient-to-br from-pink-50 to-pink-100">
+              <CardContent className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6">
+                  <Star className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-gray-900 mb-4">Reward System</h3>
+                <p className="font-body text-gray-600 leading-relaxed">
+                  Earn points for engaging with others and unlock premium features. The more you give, the more you receive.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-hover border-0 shadow-xl bg-gradient-to-br from-indigo-50 to-indigo-100">
+              <CardContent className="p-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+                  <Shield className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-gray-900 mb-4">Safe & Secure</h3>
+                <p className="font-body text-gray-600 leading-relaxed">
+                  Your data is protected with enterprise-grade security. We never ask for your social media passwords.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
+      </section>
 
-        {/* CTA Section */}
-        <div className="text-center mt-20">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Ready to boost your social media presence?
+      {/* Stats Section */}
+      <section className="py-24 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="font-display text-5xl font-bold text-white mb-16">
+            Trusted by Creators Worldwide
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Join thousands of creators who are already growing their audience with BoostBuddies.
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="glass rounded-3xl p-8">
+              <div className="font-heading text-4xl font-bold text-white mb-2">10k+</div>
+              <div className="font-body text-blue-100">Active Creators</div>
+            </div>
+            <div className="glass rounded-3xl p-8">
+              <div className="font-heading text-4xl font-bold text-white mb-2">2M+</div>
+              <div className="font-body text-blue-100">Posts Boosted</div>
+            </div>
+            <div className="glass rounded-3xl p-8">
+              <div className="font-heading text-4xl font-bold text-white mb-2">50M+</div>
+              <div className="font-body text-blue-100">Engagements</div>
+            </div>
+            <div className="glass rounded-3xl p-8">
+              <div className="font-heading text-4xl font-bold text-white mb-2">98%</div>
+              <div className="font-body text-blue-100">Satisfaction</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 bg-gray-900">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="font-display text-5xl font-bold text-white mb-6">
+            Ready to Boost Your Content?
+          </h2>
+          <p className="font-body text-xl text-gray-300 max-w-2xl mx-auto mb-12">
+            Join thousands of creators who are already growing their social media presence with BoostBuddies.
           </p>
           <Button 
             size="lg" 
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-            onClick={() => window.location.href = '/api/login'}
+            className="font-heading bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white px-12 py-6 text-xl font-semibold rounded-xl shadow-2xl hover:shadow-3xl transition-all duration-300 btn-glow"
+            onClick={() => window.location.href = '/auth'}
           >
-            Start Boosting Today
+            <Zap className="mr-3 h-6 w-6" />
+            Get Started Free Today
+            <ArrowRight className="ml-3 h-6 w-6" />
           </Button>
+          <p className="font-body text-gray-400 mt-6">No credit card required • Free forever plan available</p>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

@@ -28,7 +28,7 @@ export interface IStorage {
   // (IMPORTANT) these user operations are mandatory for Replit Auth.
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  
+
   // Post operations
   createPost(post: InsertPost): Promise<Post>;
   getPost(id: string): Promise<Post | undefined>;
@@ -36,13 +36,13 @@ export interface IStorage {
   getAllPosts(): Promise<Post[]>;
   updatePost(id: string, updates: Partial<Post>): Promise<Post | undefined>;
   deletePost(id: string): Promise<boolean>;
-  
+
   // Post likes operations
   likePost(userId: string, postId: string): Promise<PostLike>;
   unlikePost(userId: string, postId: string): Promise<boolean>;
   getUserPostLikes(userId: string): Promise<PostLike[]>;
   getPostLikes(postId: string): Promise<PostLike[]>;
-  
+
   // Community operations
   createCommunity(community: InsertCommunity): Promise<Community>;
   getCommunity(id: string): Promise<Community | undefined>;
@@ -50,16 +50,16 @@ export interface IStorage {
   joinCommunity(userId: string, communityId: string): Promise<CommunityMember>;
   leaveCommunity(userId: string, communityId: string): Promise<boolean>;
   getUserCommunities(userId: string): Promise<Community[]>;
-  
+
   // Live events operations
   createLiveEvent(event: InsertLiveEvent): Promise<LiveEvent>;
   getLiveEvent(id: string): Promise<LiveEvent | undefined>;
   getLiveEvents(): Promise<LiveEvent[]>;
   updateLiveEvent(id: string, updates: Partial<LiveEvent>): Promise<LiveEvent | undefined>;
-  
+
   // Collab spotlight operations
   getActiveCollabSpotlights(): Promise<CollabSpotlight[]>;
-  
+
   // Analytics operations
   getUserStats(userId: string): Promise<{
     totalPosts: number;
@@ -221,13 +221,13 @@ export class DatabaseStorage implements IStorage {
       .insert(postLikes)
       .values({ userId, postId })
       .returning();
-    
+
     // Get updated likes count and post info
     const [likesCount] = await db
       .select({ count: count() })
       .from(postLikes)
       .where(eq(postLikes.postId, postId));
-    
+
     const [post] = await db
       .update(posts)
       .set({
@@ -236,11 +236,11 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(posts.id, postId))
       .returning();
-    
+
     // Check if post should be approved (this is a simplified version - in real app you'd need proper transaction)
     if (post && post.likesReceived >= post.likesNeeded && post.status === "pending") {
       const pointsEarned = 50; // Base points for approval
-      
+
       await db
         .update(posts)
         .set({
@@ -249,7 +249,7 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         })
         .where(eq(posts.id, postId));
-      
+
       // Update user points
       const [currentUser] = await db.select().from(users).where(eq(users.id, post.userId));
       if (currentUser) {
@@ -262,7 +262,7 @@ export class DatabaseStorage implements IStorage {
           .where(eq(users.id, post.userId));
       }
     }
-    
+
     return like;
   }
 
@@ -270,14 +270,14 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(postLikes)
       .where(and(eq(postLikes.userId, userId), eq(postLikes.postId, postId)));
-    
+
     if (result.rowCount > 0) {
       // Get updated likes count
       const [likesCount] = await db
         .select({ count: count() })
         .from(postLikes)
         .where(eq(postLikes.postId, postId));
-      
+
       // Update post likes count
       await db
         .update(posts)
@@ -286,10 +286,10 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         })
         .where(eq(posts.id, postId));
-      
+
       return true;
     }
-    
+
     return false;
   }
 
@@ -402,11 +402,11 @@ export class DatabaseStorage implements IStorage {
   }> {
     const userPosts = await this.getUserPosts(userId);
     const user = await this.getUser(userId);
-    
+
     const totalLikes = userPosts.reduce((sum, post) => sum + post.likesReceived, 0);
     const totalShares = userPosts.reduce((sum, post) => sum + post.shares, 0);
     const totalComments = userPosts.reduce((sum, post) => sum + post.comments, 0);
-    
+
     return {
       totalPosts: userPosts.length,
       totalLikes,
@@ -422,6 +422,24 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .orderBy(desc(users.points))
       .limit(limit);
+  }
+
+  private mapRowToPost(row: any): Post {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      platform: row.platform,
+      url: row.url,
+      title: row.title,
+      description: "", // Set default empty description
+      status: row.status,
+      likesReceived: row.likes_received || 0,
+      likesNeeded: row.likes_needed || 10,
+      pointsEarned: row.points_earned || 0,
+      shares: row.shares || 0,
+      comments: row.comments || 0,
+      createdAt: row.created_at,
+    };
   }
 }
 
