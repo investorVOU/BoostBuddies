@@ -39,7 +39,7 @@ export default function Landing() {
           </a>
           <Button 
             className="font-heading bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-            onClick={() => window.location.href = '/auth'}
+            onClick={() => window.location.href = '/login'}
           >
             Get Started
           </Button>
@@ -70,7 +70,7 @@ export default function Landing() {
             <Button 
               size="lg" 
               className="font-heading bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-2xl hover:shadow-3xl transition-all duration-300 btn-glow"
-              onClick={() => window.location.href = '/auth'}
+              onClick={() => window.location.href = '/login'}
             >
               <Zap className="mr-2 h-5 w-5" />
               Start Boosting Free
@@ -242,7 +242,7 @@ export default function Landing() {
           <Button 
             size="lg" 
             className="font-heading bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white px-12 py-6 text-xl font-semibold rounded-xl shadow-2xl hover:shadow-3xl transition-all duration-300 btn-glow"
-            onClick={() => window.location.href = '/auth'}
+            onClick={() => window.location.href = '/login'}
           >
             <Zap className="mr-3 h-6 w-6" />
             Get Started Free Today

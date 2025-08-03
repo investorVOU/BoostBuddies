@@ -35,7 +35,7 @@ import {
 
 export default function Home() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function Home() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/login";
       }, 500);
       return;
     }
@@ -83,7 +83,7 @@ export default function Home() {
                   <div>
                     <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
                       <Sparkles className="w-8 h-8 text-yellow-300" />
-                      Welcome to BoostBuddies!
+                      Welcome back, {user?.firstName || user?.email?.split('@')[0] || 'Creator'}!
                     </h1>
                     <p className="text-blue-100 text-lg">
                       Boost your social media presence and connect with creators worldwide
