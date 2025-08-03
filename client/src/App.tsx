@@ -9,6 +9,8 @@ import MobileNav from "@/components/layout/mobile-nav";
 
 import Landing from "@/pages/landing";
 import Auth from "@/pages/auth";
+import Login from "@/pages/login";
+import Signup from "@/pages/signup";
 import Home from "@/pages/home";
 import Feed from "@/pages/feed";
 import SubmitPost from "@/pages/submit-post";
@@ -35,8 +37,16 @@ export default function App() {
   return (
     <Router>
       <Switch>
-        <Route path="/" exact>
+        <Route path="/">
           {isAuthenticated ? <Home /> : <Landing />}
+        </Route>
+
+        <Route path="/login">
+          {isAuthenticated ? <Home /> : <Login />}
+        </Route>
+
+        <Route path="/signup">
+          {isAuthenticated ? <Home /> : <Signup />}
         </Route>
 
         <Route path="/auth">

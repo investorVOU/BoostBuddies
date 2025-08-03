@@ -1,19 +1,13 @@
-import { createClient } from '@supabase/supabase-js';
-
-// For direct database access with Drizzle (fallback)
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import * as schema from "@shared/schema";
 
-// Supabase client for API access (recommended)
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-  console.warn("SUPABASE_URL and SUPABASE_ANON_KEY not set, falling back to direct database connection");
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is required");
 }
 
-export const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+// Create postgres connection using DATABASE_URL
+const client = postgres(process.env.DATABASE_URL);
+export const db = drizzle(client, { schema });
 
-// For BoostBuddies, we're using Supabase client only
-// Direct database connection disabled to avoid network issues in Replit
-export const db = null;
+console.log("Database connection configured with Drizzle ORM");
