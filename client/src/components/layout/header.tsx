@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { PremiumBadge } from "@/components/ui/premium-badge";
@@ -22,8 +23,11 @@ export default function Header() {
   };
 
   const handleSettings = () => {
-    // TODO: Navigate to settings page
-    console.log("Settings clicked");
+    window.location.href = "/settings";
+  };
+
+  const handleProfile = () => {
+    window.location.href = "/profile";
   };
 
   return (
@@ -88,7 +92,7 @@ export default function Header() {
                 <Settings className="w-4 h-4 mr-2" />
                 <span>Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleProfile}>
                 <User className="w-4 h-4 mr-2" />
                 <span>Profile</span>
               </DropdownMenuItem>

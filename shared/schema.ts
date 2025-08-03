@@ -37,6 +37,9 @@ export const users = pgTable("users", {
   points: integer("points").default(0),
   isPremium: boolean("is_premium").default(false),
   premiumExpiresAt: timestamp("premium_expires_at"),
+  bio: text("bio"),
+  website: text("website"),
+  profilePhoto: text("profile_photo"),
   otpSecret: varchar("otp_secret"),
   otpEnabled: boolean("otp_enabled").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -72,6 +75,27 @@ export const postEngagements = pgTable("post_engagements", {
   postId: uuid("post_id").notNull().references(() => posts.id),
   engagementType: varchar("engagement_type").notNull(), // like, share, comment
   completedAt: timestamp("completed_at").defaultNow(),
+});
+
+// Track user interactions for points system
+export const userInteractions = pgTable("user_interactions", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  postId: uuid("post_id").notNull().references(() => posts.id),
+  type: varchar("type").notNull(), // like, comment, share
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Points history tracking
+export const pointsHistory = pgTable("points_history", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  points: integer("points").notNull(),
+  actionType: varchar("action_type").notNull(), // like, comment, share, post_approved, daily_bonus
+  description: text("description").notNull(),
+  relatedPostId: uuid("related_post_id").references(() => posts.id),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const communities = pgTable("communities", {

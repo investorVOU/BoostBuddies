@@ -21,6 +21,8 @@ import Security from "@/pages/security";
 import AdminDashboard from "@/pages/admin";
 import About from "@/pages/about";
 import HowItWorks from "@/pages/how-it-works";
+import Settings from "@/pages/settings";
+import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
 export default function App() {
@@ -168,9 +170,24 @@ export default function App() {
               <div className="flex">
                 <Sidebar />
                 <main className="flex-1 lg:ml-64">
-                  <div className="p-6">
-                    <Home />
-                  </div>
+                  <Profile />
+                </main>
+              </div>
+              <MobileNav />
+            </div>
+          ) : (
+            <Auth />
+          )}
+        </Route>
+
+        <Route path="/settings">
+          {isAuthenticated ? (
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <div className="flex">
+                <Sidebar />
+                <main className="flex-1 lg:ml-64">
+                  <Settings />
                 </main>
               </div>
               <MobileNav />

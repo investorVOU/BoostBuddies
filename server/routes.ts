@@ -404,44 +404,285 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // WebSocket for real-time features
-  const wss = new WebSocketServer({ server });
+  // WebSocket disabled to avoid conflicts with Vite's dev server
+  // Real-time features will be implemented via Server-Sent Events or polling
   
-  wss.on('connection', (ws: WebSocket) => {
-    console.log('Client connected to WebSocket');
+  // Live events endpoint for real-time updates
+  app.get("/api/events/live", (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Access-Control-Allow-Origin", "*");
     
-    ws.on('message', (message: string) => {
-      try {
-        const data = JSON.parse(message);
-        console.log('Received WebSocket message:', data);
-        
-        // Handle different message types
-        switch (data.type) {
-          case 'join_event':
-            ws.send(JSON.stringify({ type: 'event_joined', eventId: data.eventId }));
-            break;
-          case 'chat_message':
-            // Broadcast chat message to all connected clients
-            wss.clients.forEach((client) => {
-              if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({
-                  type: 'chat_message',
-                  message: data.message,
-                  userId: data.userId,
-                  timestamp: new Date().toISOString()
-                }));
-              }
-            });
-            break;
-        }
-      } catch (error) {
-        console.error('Error handling WebSocket message:', error);
+    // Send initial connection message
+    res.write("data: " + JSON.stringify({ type: "connected", timestamp: new Date() }) + "\n\n");
+    
+    // Keep connection alive
+    const heartbeat = setInterval(() => {
+      res.write("data: " + JSON.stringify({ type: "heartbeat", timestamp: new Date() }) + "\n\n");
+    }, 30000);
+    
+    req.on("close", () => {
+      clearInterval(heartbeat);
+    });
+  });
+
+  // Points system routes
+  app.post("/api/posts/:id/interact", sessionAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { type } = req.body; // like, comment, share
+      const userId = req.session.userId;
+
+      if (!['like', 'comment', 'share'].includes(type)) {
+        return res.status(400).json({ message: "Invalid interaction type" });
       }
-    });
-    
-    ws.on('close', () => {
-      console.log('Client disconnected from WebSocket');
-    });
+
+      // Import PointsSystem dynamically to avoid import issues
+      const { PointsSystem } = await import("./points-system");
+      const result = await PointsSystem.processPostInteraction(userId, id, type);
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error processing interaction:", error);
+      res.status(500).json({ message: "Failed to process interaction" });
+    }
+  });
+
+  app.get("/api/user/stats", sessionAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const { PointsSystem } = await import("./points-system");
+      const stats = await PointsSystem.getUserStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting user stats:", error);
+      res.status(500).json({ message: "Failed to get user stats" });
+    }
+  });
+
+  app.get("/api/user/points-history", sessionAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const { PointsSystem } = await import("./points-system");
+      const history = await PointsSystem.getUserPointsHistory(userId, limit);
+      res.json(history);
+    } catch (error) {
+      console.error("Error getting points history:", error);
+      res.status(500).json({ message: "Failed to get points history" });
+    }
+  });
+
+  app.get("/api/leaderboard", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const { PointsSystem } = await import("./points-system");
+      const leaderboard = await PointsSystem.getLeaderboard(limit);
+      res.json(leaderboard);
+    } catch (error) {
+      console.error("Error getting leaderboard:", error);
+      res.status(500).json({ message: "Failed to get leaderboard" });
+    }
+  });
+
+  app.post("/api/user/daily-bonus", sessionAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const { PointsSystem } = await import("./points-system");
+      const awarded = await PointsSystem.awardDailyBonus(userId);
+      res.json({ awarded, message: awarded ? "Daily bonus awarded!" : "Daily bonus already claimed" });
+    } catch (error) {
+      console.error("Error awarding daily bonus:", error);
+      res.status(500).json({ message: "Failed to award daily bonus" });
+    }
+  });
+
+  // User profile routes
+  app.get("/api/user/settings", sessionAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({
+        bio: user.bio,
+        website: user.website,
+        profilePhoto: user.profilePhoto,
+      });
+    } catch (error) {
+      console.error("Error getting user settings:", error);
+      res.status(500).json({ message: "Failed to get user settings" });
+    }
+  });
+
+  app.put("/api/user/profile", sessionAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const { firstName, lastName, email, bio, website } = req.body;
+
+      await storage.updateUser(userId, {
+        firstName,
+        lastName,
+        email,
+        bio,
+        website,
+      });
+
+      res.json({ message: "Profile updated successfully" });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  app.put("/api/user/change-password", sessionAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const { currentPassword, newPassword } = req.body;
+
+      const user = await storage.getUser(userId);
+      if (!user || !user.password) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!isValidPassword) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      await storage.updateUser(userId, { password: hashedNewPassword });
+
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+
+  // Premium payment routes
+  app.post("/api/payments/flutterwave", sessionAuth, async (req, res) => {
+    try {
+      const { amount, plan } = req.body;
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+
+      // Mock Flutterwave payment processing (replace with real keys in production)
+      const paymentData = {
+        tx_ref: `BB_${Date.now()}_${userId}`,
+        amount,
+        currency: "USD",
+        customer: {
+          email: user?.email,
+          name: `${user?.firstName} ${user?.lastName}`,
+        },
+        meta: {
+          userId,
+          plan,
+        },
+        redirect_url: `${req.headers.origin}/payment/success`,
+      };
+
+      // In production, use real Flutterwave API
+      // const response = await fetch("https://api.flutterwave.com/v3/payments", {
+      //   method: "POST",
+      //   headers: {
+      //     "Authorization": `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify(paymentData),
+      // });
+
+      // Mock response for demo
+      const mockResponse = {
+        status: "success",
+        data: {
+          link: `https://checkout.flutterwave.com/v3/hosted/pay/${paymentData.tx_ref}`,
+        },
+      };
+
+      res.json(mockResponse);
+    } catch (error) {
+      console.error("Error processing Flutterwave payment:", error);
+      res.status(500).json({ message: "Payment processing failed" });
+    }
+  });
+
+  app.post("/api/payments/paystack", sessionAuth, async (req, res) => {
+    try {
+      const { amount, plan } = req.body;
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+
+      // Mock Paystack payment processing (replace with real keys in production)
+      const paymentData = {
+        email: user?.email,
+        amount: amount * 100, // Paystack uses kobo
+        reference: `BB_${Date.now()}_${userId}`,
+        callback_url: `${req.headers.origin}/payment/success`,
+        metadata: {
+          userId,
+          plan,
+        },
+      };
+
+      // In production, use real Paystack API
+      // const response = await fetch("https://api.paystack.co/transaction/initialize", {
+      //   method: "POST",
+      //   headers: {
+      //     "Authorization": `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify(paymentData),
+      // });
+
+      // Mock response for demo
+      const mockResponse = {
+        status: true,
+        data: {
+          authorization_url: `https://checkout.paystack.com/${paymentData.reference}`,
+          reference: paymentData.reference,
+        },
+      };
+
+      res.json(mockResponse);
+    } catch (error) {
+      console.error("Error processing Paystack payment:", error);
+      res.status(500).json({ message: "Payment processing failed" });
+    }
+  });
+
+  app.post("/api/payments/crypto", sessionAuth, async (req, res) => {
+    try {
+      const { amount, plan, currency } = req.body;
+      const userId = req.session.userId;
+
+      // Crypto payment addresses (replace with real addresses in production)
+      const cryptoAddresses = {
+        bitcoin: "1BoostBuddiesBTC123456789ABC",
+        ethereum: "0x1234567890123456789012345678901234567890",
+        usdt: "0xUSDT1234567890123456789012345678901234567890",
+        polygon: "0xPOLY1234567890123456789012345678901234567890",
+      };
+
+      const address = cryptoAddresses[currency as keyof typeof cryptoAddresses];
+      if (!address) {
+        return res.status(400).json({ message: "Unsupported cryptocurrency" });
+      }
+
+      res.json({
+        address,
+        amount,
+        currency: currency.toUpperCase(),
+        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${address}`,
+        instructions: `Send exactly ${amount} ${currency.toUpperCase()} to the address above. Your premium subscription will be activated within 1-3 confirmations.`,
+      });
+    } catch (error) {
+      console.error("Error processing crypto payment:", error);
+      res.status(500).json({ message: "Payment processing failed" });
+    }
   });
 
   return server;
