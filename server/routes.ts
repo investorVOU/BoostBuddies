@@ -39,6 +39,42 @@ const adminAuth = async (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   const server = createServer(app);
 
+  // Admin login route
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      // Get user from database
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Check if user is admin (you can adjust this condition)
+      if (user.email !== 'admin@boostbuddies.com') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.password || '');
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Set admin session
+      req.session.userId = user.id;
+      req.session.isAdmin = true;
+
+      res.json({ 
+        user: { ...user, password: undefined },
+        message: "Admin login successful"
+      });
+    } catch (error) {
+      console.error('Admin login error:', error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
   // Authentication routes
   app.post("/api/auth/register", async (req, res) => {
     try {

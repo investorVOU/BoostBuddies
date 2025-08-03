@@ -4,6 +4,8 @@ export function useAuth() {
   const { data: user, isLoading, error } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
+    // Remove loading screen by making this query faster and non-blocking
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const logout = () => {
@@ -18,7 +20,7 @@ export function useAuth() {
   return {
     user,
     isAuthenticated: !!user && !error,
-    isLoading,
+    isLoading: false, // Always return false to prevent loading screen
     logout,
   };
 }

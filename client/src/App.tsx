@@ -19,6 +19,7 @@ import Analytics from "@/pages/analytics";
 import Premium from "@/pages/premium";
 import Security from "@/pages/security";
 import AdminDashboard from "@/pages/admin";
+import AdminLogin from "@/pages/admin-login";
 import About from "@/pages/about";
 import HowItWorks from "@/pages/how-it-works";
 import Settings from "@/pages/settings";
@@ -29,9 +30,7 @@ export default function App() {
   const { isAuthenticated, isLoading } = useAuth();
   usePrefetch();
 
-  if (isLoading) {
-    return <LoadingScreen message="Setting up your dashboard..." />;
-  }
+  // Remove the loading screen - let components handle their own loading states
 
   // Public routes that don't require authentication
   const publicRoutes = ["/", "/auth", "/about", "/how-it-works"];
@@ -159,8 +158,12 @@ export default function App() {
           )}
         </Route>
 
+        <Route path="/admin/login">
+          <AdminLogin />
+        </Route>
+
         <Route path="/admin">
-          {isAuthenticated ? <AdminDashboard /> : <Auth />}
+          <AdminDashboard />
         </Route>
 
         <Route path="/profile">

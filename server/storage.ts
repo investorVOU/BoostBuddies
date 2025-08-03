@@ -26,7 +26,7 @@ import {
   type InsertSubscription,
   type CryptoAddress,
 } from "@shared/schema";
-import { db } from "./db";
+import { db, supabaseAdmin } from "./db";
 import { eq, desc, and, count } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -104,24 +104,50 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // User operations
+  // User operations - Using Supabase client as fallback
   async getUser(id: string): Promise<User | undefined> {
     try {
+      // Try Drizzle first
       const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
       return result[0] || undefined;
     } catch (error) {
-      console.error('Error getting user:', error);
-      return undefined;
+      console.error('Drizzle failed, trying Supabase client:', error);
+      try {
+        const { data, error: supabaseError } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (supabaseError) throw supabaseError;
+        return data as User;
+      } catch (supabaseError) {
+        console.error('Supabase client also failed:', supabaseError);
+        return undefined;
+      }
     }
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
+      // Try Drizzle first
       const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
       return result[0] || undefined;
     } catch (error) {
-      console.error('Error getting user by email:', error);
-      return undefined;
+      console.error('Drizzle failed, trying Supabase client:', error);
+      try {
+        const { data, error: supabaseError } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .eq('email', email)
+          .single();
+        
+        if (supabaseError) throw supabaseError;
+        return data as User;
+      } catch (supabaseError) {
+        console.error('Supabase client also failed:', supabaseError);
+        return undefined;
+      }
     }
   }
 
@@ -145,8 +171,23 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const result = await db.insert(users).values(newUser).returning();
-      return result[0];
+      
+      try {
+        // Try Drizzle first
+        const result = await db.insert(users).values(newUser).returning();
+        return result[0];
+      } catch (drizzleError) {
+        console.error('Drizzle failed, trying Supabase client:', drizzleError);
+        // Fallback to Supabase client
+        const { data, error: supabaseError } = await supabaseAdmin
+          .from('users')
+          .insert(newUser)
+          .select()
+          .single();
+        
+        if (supabaseError) throw supabaseError;
+        return data as User;
+      }
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;

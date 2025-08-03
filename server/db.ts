@@ -3,8 +3,10 @@ import postgres from "postgres";
 import { createClient } from "@supabase/supabase-js";
 import * as schema from "@shared/schema";
 
-// Initialize Supabase client for additional operations if needed
-export const supabase = createClient(
+// Create Supabase clients for different purposes
+
+// Initialize Supabase client for server-side operations with service role key
+export const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
@@ -13,6 +15,12 @@ export const supabase = createClient(
       persistSession: false
     }
   }
+);
+
+// Initialize Supabase client for regular operations with anon key
+export const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
 );
 
 // Enhanced database connection with multiple fallback strategies
