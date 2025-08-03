@@ -13,7 +13,7 @@ const sessionAuth = (req: any, res: any, next: any) => {
     userId: req.session?.userId,
     sessionId: req.sessionID 
   });
-  
+
   if (!req.session?.userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
@@ -25,12 +25,12 @@ const adminAuth = async (req: any, res: any, next: any) => {
   if (!req.session?.userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-  
+
   const user = await storage.getUser(req.session.userId);
   if (!user || user.email !== 'admin@boostbuddies.com') {
     return res.status(403).json({ message: "Admin access required" });
   }
-  
+
   req.user = user;
   next();
 };
@@ -42,16 +42,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, firstName, lastName } = req.body;
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "User already exists" });
       }
-      
+
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
-      
+
       // Create user
       const user = await storage.createUser({
         email,
@@ -62,10 +62,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPremium: false,
         otpEnabled: false,
       });
-      
+
       // Set session
       req.session.userId = user.id;
-      
+
       res.json({ user: { ...user, password: undefined } });
     } catch (error) {
       console.error('Registration error:', error);
@@ -76,22 +76,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       // Find user
       const user = await storage.getUserByEmail(email);
       if (!user || !user.password) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      
+
       // Check password
       const isValid = await bcrypt.compare(password, user.password);
       if (!isValid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
-      
+
       // Set session
       req.session.userId = user.id;
-      
+
       res.json({ user: { ...user, password: undefined } });
     } catch (error) {
       console.error('Login error:', error);
@@ -178,23 +178,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         userId: req.session.userId
       });
-      
+
       // Check if user is premium for auto-approval
       const user = await storage.getUser(req.session.userId);
       let status = "pending";
       let autoApproved = false;
-      
+
       if (user?.isPremium) {
         status = "approved";
         autoApproved = true;
       }
-      
+
       const post = await storage.createPost({
         ...postData,
         status,
         autoApproved,
       });
-      
+
       res.json(post);
     } catch (error) {
       console.error('Error creating post:', error);
@@ -364,29 +364,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/premium/subscribe", sessionAuth, async (req, res) => {
     try {
       const { plan } = req.body; // monthly or yearly
-      
+
       const endDate = new Date();
       if (plan === "yearly") {
         endDate.setFullYear(endDate.getFullYear() + 1);
       } else {
         endDate.setMonth(endDate.getMonth() + 1);
       }
-      
+
       const subscriptionData = insertSubscriptionSchema.parse({
         userId: req.session.userId,
         plan,
         endDate,
         startDate: new Date(),
       });
-      
+
       const subscription = await storage.createSubscription(subscriptionData);
-      
+
       // Update user premium status
       await storage.updateUser(req.session.userId, { 
         isPremium: true,
         premiumExpiresAt: endDate
       });
-      
+
       res.json(subscription);
     } catch (error) {
       console.error('Error creating subscription:', error);
@@ -404,24 +404,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // WebSocket disabled to avoid conflicts with Vite's dev server
-  // Real-time features will be implemented via Server-Sent Events or polling
-  
+  // WebSocket server removed to avoid conflicts with Vite's HMR WebSocket
+  // Real-time features are handled via Server-Sent Events above
+
   // Live events endpoint for real-time updates
   app.get("/api/events/live", (req, res) => {
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("Access-Control-Allow-Origin", "*");
-    
+
     // Send initial connection message
     res.write("data: " + JSON.stringify({ type: "connected", timestamp: new Date() }) + "\n\n");
-    
+
     // Keep connection alive
     const heartbeat = setInterval(() => {
       res.write("data: " + JSON.stringify({ type: "heartbeat", timestamp: new Date() }) + "\n\n");
     }, 30000);
-    
+
     req.on("close", () => {
       clearInterval(heartbeat);
     });

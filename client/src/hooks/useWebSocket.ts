@@ -1,55 +1,57 @@
 import { useEffect, useRef, useState } from 'react';
 
-interface WebSocketMessage {
+interface ServerSentMessage {
   type: string;
   [key: string]: any;
 }
 
 export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
-  const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
-  const ws = useRef<WebSocket | null>(null);
+  const [lastMessage, setLastMessage] = useState<ServerSentMessage | null>(null);
+  const eventSource = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const sseUrl = `/api/events/live`;
     
-    ws.current = new WebSocket(wsUrl);
+    eventSource.current = new EventSource(sseUrl);
 
-    ws.current.onopen = () => {
-      console.log('WebSocket connected');
+    eventSource.current.onopen = () => {
+      console.log('Server-Sent Events connected');
       setIsConnected(true);
     };
 
-    ws.current.onmessage = (event) => {
+    eventSource.current.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
         setLastMessage(message);
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error('Error parsing SSE message:', error);
       }
     };
 
-    ws.current.onclose = () => {
-      console.log('WebSocket disconnected');
+    eventSource.current.onerror = (error) => {
+      console.error('Server-Sent Events error:', error);
       setIsConnected(false);
     };
 
-    ws.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
     return () => {
-      if (ws.current) {
-        ws.current.close();
+      if (eventSource.current) {
+        eventSource.current.close();
       }
     };
   }, []);
 
-  const sendMessage = (message: WebSocketMessage) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(message));
-    }
+  const sendMessage = (message: ServerSentMessage) => {
+    // For Server-Sent Events, we use regular HTTP POST requests to send messages
+    fetch('/api/events/message', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    }).catch(error => {
+      console.error('Error sending message:', error);
+    });
   };
 
   return {
