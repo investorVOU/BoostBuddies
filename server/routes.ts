@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import { insertPostSchema, insertCommunitySchema, insertLiveEventSchema, insertPaymentSchema, insertSubscriptionSchema } from "@shared/schema";
 import { z } from "zod";
+import "./types"; // Import session type declarations
 
 // Simple session-based auth middleware
 const sessionAuth = (req: any, res: any, next: any) => {
@@ -58,9 +59,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
         firstName,
         lastName,
-        points: 0,
-        isPremium: false,
-        otpEnabled: false,
       });
 
       // Set session

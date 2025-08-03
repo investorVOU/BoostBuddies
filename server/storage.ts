@@ -35,7 +35,7 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: Omit<User, 'createdAt' | 'updatedAt'>): Promise<User>;
+  createUser(user: Partial<User> & { email: string; password?: string }): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<Omit<User, 'id' | 'createdAt' | 'updatedAt'>>): Promise<User | undefined>;
 
@@ -125,11 +125,23 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createUser(user: Omit<User, 'createdAt' | 'updatedAt'>): Promise<User> {
+  async createUser(user: Partial<User> & { email: string; password?: string }): Promise<User> {
     try {
       const newUser = {
-        ...user,
         id: user.id || randomUUID(),
+        email: user.email,
+        firstName: user.firstName || null,
+        lastName: user.lastName || null,
+        profileImageUrl: user.profileImageUrl || null,
+        password: user.password || null,
+        points: user.points || 0,
+        isPremium: user.isPremium || false,
+        premiumExpiresAt: user.premiumExpiresAt || null,
+        bio: user.bio || null,
+        website: user.website || null,
+        profilePhoto: user.profilePhoto || null,
+        otpSecret: user.otpSecret || null,
+        otpEnabled: user.otpEnabled || false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
