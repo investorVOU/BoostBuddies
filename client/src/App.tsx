@@ -10,6 +10,7 @@ import MobileNav from "@/components/layout/mobile-nav";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
+import ForgotPassword from "@/pages/forgot-password";
 import Home from "@/pages/home";
 import Feed from "@/pages/feed";
 import SubmitPost from "@/pages/submit-post";
@@ -49,7 +50,17 @@ export default function App() {
           {isAuthenticated ? <Home /> : <Signup />}
         </Route>
 
+        <Route path="/forgot-password">
+          <ForgotPassword />
+        </Route>
 
+        <Route path="/admin/login">
+          <AdminLogin />
+        </Route>
+
+        <Route path="/admin">
+          <AdminDashboard />
+        </Route>
 
         <Route path="/about">
           <About />

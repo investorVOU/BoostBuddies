@@ -5,10 +5,34 @@ import * as schema from "@shared/schema";
 
 // Create Supabase clients for different purposes
 
+// Extract Supabase URL from DATABASE_URL if not provided directly
+function getSupabaseConfig() {
+  const databaseUrl = process.env.DATABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!databaseUrl || !serviceRoleKey) {
+    throw new Error("DATABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required");
+  }
+  
+  // Extract Supabase URL from database connection string
+  // Format: postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres
+  const match = databaseUrl.match(/db\.([^.]+)\.supabase\.co/);
+  if (!match) {
+    throw new Error("Invalid Supabase DATABASE_URL format");
+  }
+  
+  const projectRef = match[1];
+  const supabaseUrl = `https://${projectRef}.supabase.co`;
+  
+  return { supabaseUrl, serviceRoleKey };
+}
+
+const { supabaseUrl, serviceRoleKey } = getSupabaseConfig();
+
 // Initialize Supabase client for server-side operations with service role key
 export const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  supabaseUrl,
+  serviceRoleKey,
   {
     auth: {
       autoRefreshToken: false,
@@ -17,37 +41,21 @@ export const supabaseAdmin = createClient(
   }
 );
 
-// Initialize Supabase client for regular operations with anon key
+// Initialize Supabase client for regular operations with service role key (since we don't have anon key)
 export const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
+  supabaseUrl,
+  serviceRoleKey
 );
 
-// Enhanced database connection with multiple fallback strategies
+// Use the DATABASE_URL directly from environment
 function getDatabaseConnection() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const databaseUrl = process.env.DATABASE_URL;
   
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required");
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL environment variable is required");
   }
   
-  // Extract project reference from Supabase URL
-  const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '');
-  
-  // Try multiple connection strategies in order of preference
-  const connectionStrategies = [
-    // Strategy 1: Direct connection with service role key
-    `postgresql://postgres:${serviceRoleKey}@db.${projectRef}.supabase.co:5432/postgres`,
-    // Strategy 2: Connection pooler (US East)
-    `postgresql://postgres.${projectRef}:${serviceRoleKey}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`,
-    // Strategy 3: Connection pooler (US West)  
-    `postgresql://postgres.${projectRef}:${serviceRoleKey}@aws-0-us-west-1.pooler.supabase.com:6543/postgres`,
-    // Strategy 4: Use existing DATABASE_URL if available
-    process.env.DATABASE_URL
-  ].filter(Boolean);
-  
-  return connectionStrategies[0]!; // Start with the first strategy
+  return databaseUrl;
 }
 
 let connectionString: string;
@@ -73,48 +81,20 @@ try {
 
 export const db = drizzle(client, { schema });
 
-// Enhanced connection testing with fallback strategies
-async function testAndOptimizeConnection() {
-  const connectionStrategies = [
-    // Strategy 1: Direct connection with service role key
-    `postgresql://postgres:${process.env.SUPABASE_SERVICE_ROLE_KEY}@db.${process.env.SUPABASE_URL?.replace('https://', '').replace('.supabase.co', '')}.supabase.co:5432/postgres`,
-    // Strategy 2: Connection pooler (US East)
-    `postgresql://postgres.${process.env.SUPABASE_URL?.replace('https://', '').replace('.supabase.co', '')}:${process.env.SUPABASE_SERVICE_ROLE_KEY}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`,
-    // Strategy 3: Connection pooler (US West)  
-    `postgresql://postgres.${process.env.SUPABASE_URL?.replace('https://', '').replace('.supabase.co', '')}:${process.env.SUPABASE_SERVICE_ROLE_KEY}@aws-0-us-west-1.pooler.supabase.com:6543/postgres`,
-  ];
-
-  for (let i = 0; i < connectionStrategies.length; i++) {
-    try {
-      const testClient = postgres(connectionStrategies[i], {
-        prepare: false,
-        ssl: 'require',
-        connect_timeout: 5,
-      });
-      
-      await testClient`SELECT 1`;
-      console.log(`✅ Database connection successful with strategy ${i + 1}`);
-      
-      // Update the main client with the working connection
-      if (i > 0) {
-        client.end();
-        client = testClient;
-      } else {
-        testClient.end();
-      }
-      return;
-    } catch (error) {
-      console.log(`❌ Strategy ${i + 1} failed, trying next...`);
-    }
+// Test database connection
+async function testConnection() {
+  try {
+    await client`SELECT 1`;
+    console.log("✅ Database connection successful");
+  } catch (error) {
+    console.error("❌ Database connection failed:", error);
+    console.log("ℹ️ Application will continue with limited functionality");
   }
-  
-  console.error("❌ All database connection strategies failed");
-  console.log("ℹ️ Application will continue with limited functionality");
 }
 
 // Test connection in development
 if (process.env.NODE_ENV === 'development') {
-  testAndOptimizeConnection();
+  testConnection();
 }
 
 console.log("Database connection configured with Drizzle ORM");

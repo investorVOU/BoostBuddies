@@ -9,6 +9,9 @@ import {
   subscriptions,
   payments,
   cryptoAddresses,
+  systemSettings,
+  adminLogs,
+  passwordResetTokens,
   type User,
   type UpsertUser,
   type Post,
@@ -38,6 +41,13 @@ export interface IStorage {
   createUser(user: Partial<User> & { email: string; password?: string }): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<Omit<User, 'id' | 'createdAt' | 'updatedAt'>>): Promise<User | undefined>;
+
+  // Admin and system operations
+  getSystemSettings(): Promise<any[]>;
+  updateSystemSetting(key: string, value: string, adminId: string): Promise<void>;
+  createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void>;
+  getPasswordResetToken(token: string): Promise<any | undefined>;
+  usePasswordResetToken(token: string): Promise<void>;
 
   // Post operations
   createPost(post: InsertPost): Promise<Post>;
@@ -678,6 +688,129 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting crypto addresses:', error);
       return [];
+    }
+  }
+
+  // Admin and system operations
+  async getSystemSettings(): Promise<any[]> {
+    try {
+      const result = await db.select().from(systemSettings);
+      return result;
+    } catch (error) {
+      console.error('Error getting system settings:', error);
+      // Fallback to Supabase client
+      try {
+        const { data, error: supabaseError } = await supabaseAdmin
+          .from('system_settings')
+          .select('*');
+        
+        if (supabaseError) throw supabaseError;
+        return data || [];
+      } catch (fallbackError) {
+        console.error('Supabase fallback failed:', fallbackError);
+        return [];
+      }
+    }
+  }
+
+  async updateSystemSetting(key: string, value: string, adminId: string): Promise<void> {
+    try {
+      await db.insert(systemSettings)
+        .values({
+          key,
+          value,
+          description: `Updated by admin ${adminId}`,
+          category: 'general',
+          updatedBy: adminId,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: systemSettings.key,
+          set: {
+            value,
+            updatedBy: adminId,
+            updatedAt: new Date(),
+          },
+        });
+    } catch (error) {
+      console.error('Error updating system setting:', error);
+      // Fallback to Supabase client
+      const { error: supabaseError } = await supabaseAdmin
+        .from('system_settings')
+        .upsert({
+          key,
+          value,
+          description: `Updated by admin ${adminId}`,
+          category: 'general',
+          updated_by: adminId,
+          updated_at: new Date().toISOString(),
+        });
+      
+      if (supabaseError) throw supabaseError;
+    }
+  }
+
+  async createPasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
+    try {
+      await db.insert(passwordResetTokens).values({
+        userId,
+        token,
+        expiresAt,
+        isUsed: false,
+        createdAt: new Date(),
+      });
+    } catch (error) {
+      console.error('Error creating password reset token:', error);
+      // Fallback to Supabase client
+      const { error: supabaseError } = await supabaseAdmin
+        .from('password_reset_tokens')
+        .insert({
+          user_id: userId,
+          token,
+          expires_at: expiresAt.toISOString(),
+          is_used: false,
+          created_at: new Date().toISOString(),
+        });
+      
+      if (supabaseError) throw supabaseError;
+    }
+  }
+
+  async getPasswordResetToken(token: string): Promise<any | undefined> {
+    try {
+      const result = await db.select()
+        .from(passwordResetTokens)
+        .where(eq(passwordResetTokens.token, token))
+        .limit(1);
+      return result[0] || undefined;
+    } catch (error) {
+      console.error('Error getting password reset token:', error);
+      // Fallback to Supabase client
+      const { data, error: supabaseError } = await supabaseAdmin
+        .from('password_reset_tokens')
+        .select('*')
+        .eq('token', token)
+        .single();
+      
+      if (supabaseError) return undefined;
+      return data;
+    }
+  }
+
+  async usePasswordResetToken(token: string): Promise<void> {
+    try {
+      await db.update(passwordResetTokens)
+        .set({ isUsed: true })
+        .where(eq(passwordResetTokens.token, token));
+    } catch (error) {
+      console.error('Error using password reset token:', error);
+      // Fallback to Supabase client
+      const { error: supabaseError } = await supabaseAdmin
+        .from('password_reset_tokens')
+        .update({ is_used: true })
+        .eq('token', token);
+      
+      if (supabaseError) throw supabaseError;
     }
   }
 }

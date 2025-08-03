@@ -194,7 +194,11 @@ export default function Login() {
                 <input type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
                 <span className="text-gray-600">Remember me</span>
               </label>
-              <button type="button" className="text-blue-600 hover:text-blue-800 font-medium">
+              <button 
+                type="button" 
+                onClick={() => setLocation("/forgot-password")}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
                 Forgot password?
               </button>
             </div>
