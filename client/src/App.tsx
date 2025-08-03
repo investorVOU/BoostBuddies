@@ -8,7 +8,6 @@ import Sidebar from "@/components/layout/sidebar";
 import MobileNav from "@/components/layout/mobile-nav";
 
 import Landing from "@/pages/landing";
-import Auth from "@/pages/auth";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Home from "@/pages/home";
@@ -33,7 +32,7 @@ export default function App() {
   // Remove the loading screen - let components handle their own loading states
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/", "/auth", "/about", "/how-it-works"];
+  const publicRoutes = ["/", "/login", "/signup", "/about", "/how-it-works"];
 
   return (
     <Router>
@@ -50,9 +49,7 @@ export default function App() {
           {isAuthenticated ? <Home /> : <Signup />}
         </Route>
 
-        <Route path="/auth">
-          {isAuthenticated ? <Home /> : <Auth />}
-        </Route>
+
 
         <Route path="/about">
           <About />
@@ -78,7 +75,7 @@ export default function App() {
               <MobileNav />
             </div>
           ) : (
-            <Auth />
+            <Login />
           )}
         </Route>
 
@@ -97,7 +94,7 @@ export default function App() {
               <MobileNav />
             </div>
           ) : (
-            <Auth />
+            <Login />
           )}
         </Route>
 
@@ -116,7 +113,7 @@ export default function App() {
               <MobileNav />
             </div>
           ) : (
-            <Auth />
+            <Login />
           )}
         </Route>
 
@@ -135,7 +132,7 @@ export default function App() {
               <MobileNav />
             </div>
           ) : (
-            <Auth />
+            <Login />
           )}
         </Route>
 
@@ -154,7 +151,7 @@ export default function App() {
               <MobileNav />
             </div>
           ) : (
-            <Auth />
+            <Login />
           )}
         </Route>
 
@@ -179,7 +176,7 @@ export default function App() {
               <MobileNav />
             </div>
           ) : (
-            <Auth />
+            <Login />
           )}
         </Route>
 
@@ -196,7 +193,7 @@ export default function App() {
               <MobileNav />
             </div>
           ) : (
-            <Auth />
+            <Login />
           )}
         </Route>
  <Route path="/security">
@@ -214,7 +211,7 @@ export default function App() {
               <MobileNav />
             </div>
           ) : (
-            <Auth />
+            <Login />
           )}
         </Route>
         <Route>
