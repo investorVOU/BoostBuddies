@@ -13,15 +13,18 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(endpoint: string, method: string = "GET", data?: any) {
   const url = endpoint.startsWith('http') ? endpoint : `${window.location.origin}${endpoint}`;
 
+  // Ensure method is a valid HTTP method string
+  const validMethod = typeof method === 'string' ? method.toUpperCase() : 'GET';
+
   const config: RequestInit = {
-    method,
+    method: validMethod,
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include", // Important for session cookies
   };
 
-  if (data && method !== "GET") {
+  if (data && validMethod !== "GET") {
     config.body = JSON.stringify(data);
   }
 
