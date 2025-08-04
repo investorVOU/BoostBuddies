@@ -49,10 +49,7 @@ export default function Signup() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: Omit<SignupFormData, "confirmPassword">) => {
-      return apiRequest("/api/auth/register", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("/api/auth/register", "POST", data);
     },
     onSuccess: () => {
       toast({
