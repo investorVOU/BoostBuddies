@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -26,6 +26,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -42,12 +43,18 @@ export default function Login() {
       return apiRequest("/api/auth/login", "POST", data);
     },
     onSuccess: () => {
+      // Invalidate and refetch auth query to update authentication state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
       toast({
         title: "Welcome back!",
         description: "You've been logged in successfully.",
       });
-      // Force a page reload to refresh auth state and then navigate
-      window.location.href = "/home";
+      
+      // Small delay to allow auth state to update before navigating
+      setTimeout(() => {
+        setLocation("/home");
+      }, 200);
     },
     onError: (error: any) => {
       toast({
