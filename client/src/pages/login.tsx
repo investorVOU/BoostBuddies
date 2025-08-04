@@ -46,10 +46,8 @@ export default function Login() {
         title: "Welcome back!",
         description: "You've been logged in successfully.",
       });
-      // Force a small delay to ensure the auth state updates
-      setTimeout(() => {
-        setLocation("/home");
-      }, 100);
+      // Force a page reload to refresh auth state and then navigate
+      window.location.href = "/home";
     },
     onError: (error: any) => {
       toast({
