@@ -46,8 +46,10 @@ export default function Login() {
         title: "Welcome back!",
         description: "You've been logged in successfully.",
       });
-      setLocation("/feed");
-      window.location.reload();
+      // Force a small delay to ensure the auth state updates
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error: any) => {
       toast({

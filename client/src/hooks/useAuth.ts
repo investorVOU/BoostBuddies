@@ -20,7 +20,7 @@ export function useAuth() {
   return {
     user,
     isAuthenticated: !!user && !error,
-    isLoading: false, // Always return false to prevent loading screen
+    isLoading, // Return actual loading state for proper auth flow
     logout,
   };
 }
