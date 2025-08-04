@@ -48,7 +48,7 @@ export default function Login() {
       });
       // Force a small delay to ensure the auth state updates
       setTimeout(() => {
-        setLocation("/");
+        setLocation("/home");
       }, 100);
     },
     onError: (error: any) => {

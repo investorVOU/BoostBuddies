@@ -42,6 +42,10 @@ export default function App() {
           {isAuthenticated ? <Home /> : <Landing />}
         </Route>
 
+        <Route path="/home">
+          {isAuthenticated ? <Home /> : <Login />}
+        </Route>
+
         <Route path="/login">
           {isAuthenticated ? <Home /> : <Login />}
         </Route>
